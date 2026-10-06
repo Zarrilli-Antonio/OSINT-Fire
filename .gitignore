@@ -1,0 +1,47 @@
+# ---- local data and secrets: investigations, notes and API keys are stored here ----
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+.env
+.env.*
+!.env.example
+
+# ---- Python (backend/) ----
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# ---- build output ----
+# scripts/build_app.sh writes PyInstaller work files to build/ and the finished app to dist/
+/build/
+/dist/
+*.spec
+
+# ---- Flutter (app/) ----
+# the Flutter project has its own app/.gitignore; these are repeated so nothing slips through from the repo root
+app/.dart_tool/
+app/build/
+app/.flutter-plugins-dependencies
+app/.packages
+app/macos/Pods/
+app/macos/Flutter/ephemeral/
+app/macos/Flutter/Flutter-Debug.xcconfig.local
+app/macos/**/xcuserdata/
+app/macos/**/*.xcworkspace/xcuserdata/
+*.iml
+
+# ---- editors, OS, assistants ----
+.DS_Store
+.idea/
+.vscode/
+*.swp
+.claude/

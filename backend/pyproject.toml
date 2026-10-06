@@ -1,0 +1,28 @@
+[project]
+name = "osint-fire"
+version = "0.1.0"
+description = "OSINT automation and correlation tool"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "httpx",
+    "dnspython",
+    "maigret",
+    "pillow>=12.3.0",
+    "reportlab>=5.0.1",
+    "phonenumbers>=9.0.40",
+]
+
+[project.optional-dependencies]
+mcp = [
+    "mcp>=2.3.0",
+]
+
+[dependency-groups]
+dev = ["pytest", "pytest-asyncio"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]

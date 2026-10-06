@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>OSINT-Fire</title>
+  <defs>
+    <radialGradient id="glow" cx="30%" cy="22%" r="85%">
+      <stop offset="0" stop-color="#E5484D" stop-opacity=".30"/>
+      <stop offset="1" stop-color="#E5484D" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="body"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
+  </defs>
+  <!-- tile -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#0A0A0C"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#glow)"/>
+  <rect x="101.5" y="101.5" width="821" height="821" rx="183.5" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width="3"/>
+  <!-- eye -->
+  <path d="M212 512 C330 318 694 318 812 512 C694 706 330 706 212 512 Z" fill="none" stroke="#E5484D" stroke-width="46" stroke-linejoin="round"/>
+  <!-- flame pupil -->
+  <g transform="translate(512 548) scale(.88) translate(-512 -548)">
+  <path id="flame" fill="#E5484D" d="M512 352 C534 410 606 446 606 530 C606 596 564 650 512 650 C460 650 418 600 418 538 C418 498 438 466 468 440 C470 478 486 496 504 502 C488 452 494 398 512 352 Z"/>
+  <path fill="#FFB454" d="M512 646 C482 646 462 618 462 588 C462 560 480 546 496 524 C500 548 510 560 522 562 C516 536 522 512 534 492 C556 520 562 548 562 588 C562 618 542 646 512 646 Z"/>
+  </g>
+</svg>
