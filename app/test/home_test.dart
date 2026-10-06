@@ -23,10 +23,10 @@ void main() {
     expect(find.textContaining('Dominio · example.com'), findsOneWidget);
 
     // sidebar collapses and reopens, via button and via cmd+B
-    await tester.tap(find.byTooltip('Riduci pannello (⌘B)'));
+    await tester.tap(find.byTooltip('Riduci pannello (⌘/Ctrl+B)'));
     await tester.pumpAndSettle();
     expect(find.text('OSINT/FIRE'), findsNothing);
-    await tester.tap(find.byTooltip('Apri pannello (⌘B)'));
+    await tester.tap(find.byTooltip('Apri pannello (⌘/Ctrl+B)'));
     await tester.pumpAndSettle();
     expect(find.text('OSINT/FIRE'), findsOneWidget);
     await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);

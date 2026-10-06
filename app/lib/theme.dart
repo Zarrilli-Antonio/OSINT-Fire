@@ -9,7 +9,7 @@ const line = Color(0x1FFFFFFF);
 const gold = Color(0xFFFFD166);
 
 const mono = 'Menlo';
-const monoFallback = ['SF Mono', 'Monaco', 'Courier New', 'monospace'];
+const monoFallback = ['SF Mono', 'Monaco', 'Cascadia Mono', 'Consolas', 'Courier New', 'monospace']; // Menlo exists only on macOS
 
 const _typeColors = {
   'Dominio': Color(0xFF6EA8FE),
@@ -88,7 +88,8 @@ ThemeData buildTheme() {
         disabledBackgroundColor: const Color(0x33E5484D),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         padding: const EdgeInsets.symmetric(vertical: 14),
-        textStyle: const TextStyle(letterSpacing: 1.2, fontWeight: FontWeight.w600, fontSize: 12),
+        // a button style replaces the theme's text style instead of merging with it: name the font explicitly
+        textStyle: const TextStyle(letterSpacing: 1.2, fontWeight: FontWeight.w600, fontSize: 12, fontFamily: mono, fontFamilyFallback: monoFallback),
       ),
     ),
     textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: accent)),
@@ -103,7 +104,7 @@ ThemeData buildTheme() {
     chipTheme: ChipThemeData(
       backgroundColor: Colors.transparent,
       side: side,
-      labelStyle: const TextStyle(fontSize: 11, color: fg),
+      labelStyle: const TextStyle(fontSize: 11, color: fg, fontFamily: mono, fontFamilyFallback: monoFallback), // chips do not inherit the theme font
       deleteIconColor: dim,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
     ),

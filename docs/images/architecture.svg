@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 470" font-family="Menlo, Consolas, 'SF Mono', monospace" font-size="13">
+  <title>OSINT-Fire architecture</title>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8a8a92"/></marker>
+    <radialGradient id="g" cx="0" cy="0" r="1.2"><stop offset="0" stop-color="#e5484d" stop-opacity=".28"/><stop offset="1" stop-color="#e5484d" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="960" height="470" rx="14" fill="#0a0a0c"/><rect width="960" height="470" rx="14" fill="url(#g)"/>
+  <g fill="#e6e6e8" stroke="#3a3a42" stroke-width="1.2">
+    <rect x="30" y="40" width="250" height="150" rx="8" fill="#111114"/>
+    <rect x="355" y="40" width="300" height="390" rx="8" fill="#111114"/>
+    <rect x="730" y="40" width="200" height="110" rx="8" fill="#111114"/>
+    <rect x="730" y="185" width="200" height="110" rx="8" fill="#111114"/>
+    <rect x="30" y="250" width="250" height="90" rx="8" fill="#111114"/>
+    <rect x="30" y="370" width="250" height="60" rx="8" fill="#111114"/>
+    <rect x="730" y="330" width="200" height="100" rx="8" fill="#111114"/>
+  </g>
+  <g fill="#e5484d" font-weight="700" letter-spacing="1.5">
+    <text x="48" y="68">APP (Flutter)</text><text x="373" y="68">BACKEND (Python, FastAPI)</text>
+    <text x="748" y="68">PUBLIC SOURCES</text><text x="748" y="213">AI</text><text x="48" y="278">MCP CLIENTS</text><text x="48" y="398">DATABASE</text><text x="748" y="358">EXPORTS</text>
+  </g>
+  <g fill="#c9c9cf">
+    <text x="48" y="96">interactive graph</text><text x="48" y="116">search · notes · hide</text><text x="48" y="136">nodes &amp; bridges by hand</text><text x="48" y="156">settings · AI analyst</text>
+    <text x="373" y="96">runner: pivots, depth, cache</text><text x="373" y="124">100+ collectors</text>
+    <text x="373" y="144" fill="#8a8a92">domain · email · username</text><text x="373" y="162" fill="#8a8a92">IP · person · company · phone</text>
+    <text x="373" y="196">correlation (scored links)</text><text x="373" y="224">graph, notes, layout, hidden</text>
+    <text x="373" y="252">report builders</text><text x="373" y="280">AI context builder</text>
+    <text x="373" y="308">settings and API keys</text>
+    <text x="373" y="352" fill="#8a8a92">bundled as one executable</text><text x="373" y="370" fill="#8a8a92">(PyInstaller) in the release app</text>
+    <text x="748" y="96">DNS · RDAP · CT logs</text><text x="748" y="116">web pages · archives</text><text x="748" y="136">code · social profiles</text>
+    <text x="748" y="241">Anthropic or any</text><text x="748" y="259">OpenAI-compatible</text><text x="748" y="277" fill="#8a8a92">(Ollama: stays local)</text>
+    <text x="748" y="386">PDF · Markdown</text><text x="748" y="404">Obsidian · GraphML</text>
+    <text x="48" y="304">Claude Desktop and others</text><text x="48" y="322" fill="#8a8a92">read and drive investigations</text>
+    <text x="48" y="422">SQLite, local</text>
+  </g>
+  <g stroke="#8a8a92" stroke-width="1.4" fill="none" marker-end="url(#a)" marker-start="url(#a)">
+    <path d="M280 115 H355"/><path d="M655 95 H730"/><path d="M655 240 H730"/><path d="M655 380 H730"/><path d="M355 400 H280"/><path d="M280 295 H355"/>
+  </g>
+  <g fill="#8a8a92" font-size="11"><text x="287" y="107">HTTP+SSE</text><text x="287" y="287">HTTP</text></g>
+</svg>

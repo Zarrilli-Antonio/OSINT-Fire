@@ -1,0 +1,71 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Backend tests
+        run: cd backend && uv run pytest -q
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: App tests
+        run: cd app && flutter pub get && flutter test
+
+  windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build
+        run: powershell -ExecutionPolicy Bypass -File scripts/build_app.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OSINT-Fire-windows
+          path: dist/OSINT-Fire-windows.zip
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" dist/OSINT-Fire-windows.zip --clobber
+
+  macos:
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build
+        run: ./scripts/build_app.sh
+      - name: Zip
+        run: ditto -c -k --keepParent dist/OSINT-Fire.app dist/OSINT-Fire-macos.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OSINT-Fire-macos
+          path: dist/OSINT-Fire-macos.zip
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" dist/OSINT-Fire-macos.zip --clobber

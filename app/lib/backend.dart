@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import 'api.dart';
+import 'platform.dart';
 
 /// Starts the Python backend as a child process if nothing answers on [baseUrl].
 // ponytail: dev-layout only (finds ../backend next to the app, runs `uv run`). Bundle the backend (PyInstaller) for distribution.
@@ -18,9 +19,9 @@ class Backend {
     }
   }
 
-  /// The backend executable inside a packaged app (Contents/Resources/backend), or null when running from source.
+  /// The backend executable inside a packaged app, or null when running from source.
   static File? bundled() {
-    final f = File('${File(Platform.resolvedExecutable).parent.parent.path}/Resources/backend/osint-backend');
+    final f = File(bundledBackendPathFor(Platform.resolvedExecutable, windows: Platform.isWindows));
     return f.existsSync() ? f : null;
   }
 
@@ -40,12 +41,14 @@ class Backend {
     try {
       final exe = bundled();
       if (exe != null) {
-        _p = await Process.start(exe.path, [], workingDirectory: Platform.environment['HOME']);
+        _p = await Process.start(exe.path, [], workingDirectory: homeDir());
       } else {
         final dir = this.dir();
         if (dir == null) return 'backend non trovato (imposta OSINT_BACKEND_DIR)';
-        // login shell so PATH includes uv
-        _p = await Process.start('/bin/zsh', ['-lc', 'exec uv run uvicorn osint.main:app --port 8765'], workingDirectory: dir.path);
+        _p = Platform.isWindows
+            ? await Process.start('uv', ['run', 'python', 'run_backend.py'], workingDirectory: dir.path, runInShell: true)
+            // login shell so PATH includes uv
+            : await Process.start('/bin/zsh', ['-lc', 'exec uv run python run_backend.py'], workingDirectory: dir.path);
       }
       // nobody reads the child's output: drain it, or a full pipe would eventually block the backend
       _p!.stdout.drain<void>();
@@ -60,5 +63,14 @@ class Backend {
     return 'backend avviato ma non risponde su $baseUrl';
   }
 
-  void stop() => _p?.kill();
+  void stop() {
+    final p = _p;
+    if (p == null) return;
+    // on Windows kill() only ends the shell that was started, not uv and the Python it spawned: end the whole tree
+    if (Platform.isWindows) {
+      Process.runSync('taskkill', ['/PID', '${p.pid}', '/T', '/F']);
+    } else {
+      p.kill();
+    }
+  }
 }

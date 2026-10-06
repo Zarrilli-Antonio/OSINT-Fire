@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'platform.dart';
+
 class PivotLink {
   const PivotLink(this.label, this.url);
   final String label, url;
@@ -120,8 +122,6 @@ List<PivotLink> pivotLinks(String type, String value, {String? imageUrl}) {
 
 /// Open a URL in the default browser. Only http(s) is ever opened.
 Future<void> openUrl(String url) async {
-  final u = Uri.tryParse(url);
-  if (u == null || !(u.scheme == 'http' || u.scheme == 'https')) return;
-  final cmd = Platform.isMacOS ? ['open'] : Platform.isWindows ? ['cmd', '/c', 'start', ''] : ['xdg-open'];
-  await Process.run(cmd.first, [...cmd.skip(1), url]);
+  final cmd = openUrlCommand(url, windows: Platform.isWindows, macos: Platform.isMacOS);
+  if (cmd != null) await Process.run(cmd.first, cmd.skip(1).toList());
 }

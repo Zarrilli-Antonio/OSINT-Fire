@@ -15,7 +15,7 @@ Graph _graph({Set<int>? hidden}) => Graph(
       hidden,
     );
 
-final _search = find.byWidgetPredicate((w) => w is TextField && w.decoration?.hintText == 'cerca nel grafo (⌘F)');
+final _search = find.byWidgetPredicate((w) => w is TextField && w.decoration?.hintText == 'cerca nel grafo (⌘/Ctrl+F)');
 
 Future<void> _pump(WidgetTester tester, {Set<int>? hidden, Graph? graph}) async {
   tester.view.physicalSize = const Size(1280, 800);
@@ -68,7 +68,7 @@ void main() {
   testWidgets('new search clears graph, seeds and form', (tester) async {
     await _pump(tester);
     expect(find.textContaining('nessun grafo'), findsNothing);
-    await tester.tap(find.byTooltip('Nuova ricerca (⌘N)').first);
+    await tester.tap(find.byTooltip('Nuova ricerca (⌘/Ctrl+N)').first);
     await tester.pump();
     expect(find.textContaining('nessun grafo'), findsOneWidget);
     expect(find.textContaining('0 nodi'), findsOneWidget);
@@ -80,7 +80,7 @@ void main() {
     expect(find.text('AGGIORNA'), findsOneWidget);
     expect(find.text('AVVIA'), findsNothing);
     expect(find.text('FERMA'), findsNothing);
-    await tester.tap(find.byTooltip('Nuova ricerca (⌘N)').first);
+    await tester.tap(find.byTooltip('Nuova ricerca (⌘/Ctrl+N)').first);
     await tester.pump();
     expect(find.text('AVVIA'), findsOneWidget);
     expect(find.text('AGGIORNA'), findsNothing);

@@ -1229,3 +1229,15 @@ async def test_delete_and_hide_endpoints_report_cascade(monkeypatch):
         assert (await c.delete(f"/investigations/{inv}/entities/{ids['other.com']}?cascade=false")).json() == {"ok": True, "hidden": []}
         g = (await c.get(f"/investigations/{inv}/graph")).json()
         assert not {"e1@x.com", "leaf", "other.com"} & {n["value"] for n in g["nodes"]}
+
+
+def test_data_dir_per_platform():
+    from pathlib import PurePosixPath as P
+
+    from osint.paths import data_dir
+
+    home = P("/h/anna")
+    assert data_dir("darwin", {}, home) == P("/h/anna/Library/Application Support/OSINT-Fire")
+    assert data_dir("win32", {"APPDATA": "/h/anna/AppData/Roaming"}, home) == P("/h/anna/AppData/Roaming/OSINT-Fire")
+    assert data_dir("win32", {}, home) == P("/h/anna/AppData/Roaming/OSINT-Fire")  # no APPDATA: the default location
+    assert data_dir("linux", {"XDG_DATA_HOME": "/x"}, home) == P("/x/OSINT-Fire") and data_dir("linux", {}, home) == P("/h/anna/.local/share/OSINT-Fire")

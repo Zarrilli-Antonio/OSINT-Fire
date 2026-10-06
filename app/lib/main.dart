@@ -12,6 +12,7 @@ import 'graph_view.dart';
 import 'manual_dialogs.dart';
 import 'note_editor.dart';
 import 'pivot_links.dart';
+import 'platform.dart';
 import 'settings_dialog.dart';
 import 'theme.dart';
 
@@ -31,10 +32,13 @@ class App extends StatelessWidget {
 }
 
 class Home extends StatefulWidget {
-  const Home({super.key, this.autostart = true, this.initialGraph, this.initialInv});
+  const Home({super.key, this.autostart = true, this.initialGraph, this.initialInv, this.initialName, this.initialSeeds, this.backendReadyForTests = false});
   final bool autostart; // false in tests: do not spawn the backend
   final Graph? initialGraph; // tests only: start with a loaded graph
   final int? initialInv;
+  final String? initialName; // tests and README screenshots only: a search already filled in
+  final List<(String, String)>? initialSeeds;
+  final bool backendReadyForTests;
 
   @override
   State<Home> createState() => _HomeState();
@@ -57,6 +61,9 @@ class _HomeState extends State<Home> {
       _raw = widget.initialGraph!;
       inv = widget.initialInv;
     }
+    name.text = widget.initialName ?? '';
+    seeds.addAll(widget.initialSeeds ?? const []);
+    if (widget.backendReadyForTests) backendReady = true;
     if (widget.autostart) _startBackend();
   }
 
@@ -595,12 +602,11 @@ class _HomeState extends State<Home> {
 
   Future<void> _export(String fmt) async {
     if (inv == null) return;
-    // sandboxed HOME is inside the app container; the downloads entitlement allows the real ~/Downloads
-    final dl = '${Platform.environment['HOME']!.split('/Library/Containers').first}/Downloads';
+    final dl = downloadsDir();
     try {
       String done;
       if (fmt == 'obsidian') {
-        final dir = '$dl/osint-$inv-vault';
+        final dir = '$dl${Platform.pathSeparator}osint-$inv-vault';
         for (final e in (await exportVault(inv!, includeHidden: viewMode != 'clean')).entries) {
           final f = File('$dir/${e.key}');
           await f.parent.create(recursive: true);
@@ -608,7 +614,7 @@ class _HomeState extends State<Home> {
         }
         done = dir;
       } else {
-        done = '$dl/osint-$inv.$fmt';
+        done = '$dl${Platform.pathSeparator}osint-$inv.$fmt';
         await File(done).writeAsBytes(await exportBytes(inv!, fmt, includeHidden: viewMode != 'clean'));
       }
       setState(() => log.insert(0, 'Esportato: $done'));
@@ -633,9 +639,12 @@ class _HomeState extends State<Home> {
     final hl = _highlight();
     return CallbackShortcuts(
       bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyB, meta: true): () => setState(() => sidebarOpen = !sidebarOpen),
-        const SingleActivator(LogicalKeyboardKey.keyF, meta: true): () => searchFocus.requestFocus(),
-        const SingleActivator(LogicalKeyboardKey.keyN, meta: true): _newSearch,
+        // ⌘ on macOS, Ctrl on Windows and Linux
+        for (final meta in [true, false]) ...{
+          SingleActivator(LogicalKeyboardKey.keyB, meta: meta, control: !meta): () => setState(() => sidebarOpen = !sidebarOpen),
+          SingleActivator(LogicalKeyboardKey.keyF, meta: meta, control: !meta): () => searchFocus.requestFocus(),
+          SingleActivator(LogicalKeyboardKey.keyN, meta: meta, control: !meta): _newSearch,
+        },
         const SingleActivator(LogicalKeyboardKey.escape): () => linkMode ? _cancelLink() : null,
       },
       child: Focus(
@@ -682,7 +691,8 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Widget _pane(GlobalKey<GraphViewState> key, Graph g, GNode? sel, Set<int>? hl, {Set<int>? ghosts, bool saves = true, String? title}) => Stack(children: [
+  Widget _pane(GlobalKey<GraphViewState> key, Graph g, GNode? sel, Set<int>? hl, {Set<int>? ghosts, bool saves = true, String? title}) => ClipRect(
+          child: Stack(children: [
         GraphView(
           key: key,
           graph: g,
@@ -701,12 +711,11 @@ class _HomeState extends State<Home> {
         ),
         if (title != null)
           Positioned(
-            top: 10,
-            left: 0,
-            right: 0,
-            child: IgnorePointer(child: Center(child: Text(title, style: const TextStyle(fontSize: 10, letterSpacing: 2, color: dim)))),
+            top: 12,
+            right: 16,
+            child: IgnorePointer(child: Text(title, style: const TextStyle(fontSize: 10, letterSpacing: 2, color: dim))),
           ),
-      ]);
+      ]));
 
   /// Switch between the three ways to look at hidden nodes.
   Widget _viewBar() => Container(
@@ -722,10 +731,17 @@ class _HomeState extends State<Home> {
               message: tip,
               child: InkWell(
                 borderRadius: BorderRadius.circular(4),
-                onTap: () => setState(() {
-                  viewMode = m;
-                  if (m == 'clean' && selected != null && _raw.hidden.contains(selected!.id)) selected = null;
-                }),
+                onTap: () {
+                  setState(() {
+                    viewMode = m;
+                    if (m == 'clean' && selected != null && _raw.hidden.contains(selected!.id)) selected = null;
+                  });
+                  // the panes change width when the split opens or closes: frame the graph again once they have their new size
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    graphKey.currentState?.fit();
+                    graphKey2.currentState?.fit();
+                  });
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(color: viewMode == m ? accent.withValues(alpha: 0.2) : null, borderRadius: BorderRadius.circular(4)),
@@ -760,7 +776,7 @@ class _HomeState extends State<Home> {
             focusNode: searchFocus,
             style: const TextStyle(fontSize: 12),
             decoration: InputDecoration(
-              hintText: 'cerca nel grafo (⌘F)',
+              hintText: 'cerca nel grafo (⌘/Ctrl+F)',
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
@@ -798,8 +814,8 @@ class _HomeState extends State<Home> {
         const SizedBox(height: 12),
         Image.asset('assets/icon.png', width: 28, height: 28),
         const SizedBox(height: 4),
-        IconButton(tooltip: 'Apri pannello (⌘B)', icon: const Icon(Icons.chevron_right), onPressed: () => setState(() => sidebarOpen = true)),
-        IconButton(tooltip: 'Nuova ricerca (⌘N)', icon: const Icon(Icons.add_circle_outline), onPressed: running ? null : _newSearch),
+        IconButton(tooltip: 'Apri pannello (⌘/Ctrl+B)', icon: const Icon(Icons.chevron_right), onPressed: () => setState(() => sidebarOpen = true)),
+        IconButton(tooltip: 'Nuova ricerca (⌘/Ctrl+N)', icon: const Icon(Icons.add_circle_outline), onPressed: running ? null : _newSearch),
         const SizedBox(height: 6),
         Container(
           width: 7,
@@ -902,11 +918,11 @@ class _HomeState extends State<Home> {
             Image.asset('assets/icon.png', width: 30, height: 30),
             const SizedBox(width: 10),
             const Expanded(child: Text('OSINT/FIRE', style: TextStyle(fontSize: 14, letterSpacing: 3, fontWeight: FontWeight.w700))),
-            IconButton(tooltip: 'Riduci pannello (⌘B)', icon: const Icon(Icons.chevron_left), onPressed: () => setState(() => sidebarOpen = false)),
+            IconButton(tooltip: 'Riduci pannello (⌘/Ctrl+B)', icon: const Icon(Icons.chevron_left), onPressed: () => setState(() => sidebarOpen = false)),
           ]),
           const SizedBox(height: 6),
           Row(children: [
-            IconButton(tooltip: 'Nuova ricerca (⌘N)', icon: const Icon(Icons.add_circle_outline), onPressed: running ? null : _newSearch),
+            IconButton(tooltip: 'Nuova ricerca (⌘/Ctrl+N)', icon: const Icon(Icons.add_circle_outline), onPressed: running ? null : _newSearch),
             _history(),
             _exportMenu(),
             IconButton(tooltip: 'Analisi AI', icon: const Icon(Icons.auto_awesome, size: 18), onPressed: inv == null ? null : _openAi),

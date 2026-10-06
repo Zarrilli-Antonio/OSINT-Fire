@@ -7,9 +7,11 @@ import 'theme.dart';
 /// Ask the configured AI about the current investigation. Pops an [AiPivot] when the user wants to expand a
 /// suggestion, or the string 'settings' when they want to configure the connector.
 class AiDialog extends StatefulWidget {
-  const AiDialog({super.key, required this.inv, this.initialStatus});
+  const AiDialog({super.key, required this.inv, this.initialStatus, this.initialResult, this.initialTask});
   final int inv;
-  final AiStatus? initialStatus; // tests only: skip the network load
+  final AiStatus? initialStatus; // tests/screenshots only: skip the network load
+  final AiResult? initialResult;
+  final String? initialTask;
 
   @override
   State<AiDialog> createState() => _AiDialogState();
@@ -34,6 +36,9 @@ class _AiDialogState extends State<AiDialog> {
     super.initState();
     if (widget.initialStatus != null) {
       status = widget.initialStatus;
+      text = widget.initialResult?.text;
+      pivots = widget.initialResult?.pivots ?? [];
+      lastTask = widget.initialTask;
       return;
     }
     fetchAiStatus().then((s) {

@@ -6,9 +6,8 @@ import 'package:flutter/services.dart';
 
 import 'api.dart';
 import 'backend.dart';
+import 'platform.dart';
 import 'theme.dart';
-
-String downloadsDir() => '${Platform.environment['HOME']!.split('/Library/Containers').first}/Downloads';
 
 /// Settings in five tabs. Edits are collected in a patch and sent together with "Salva"; the backend validates
 /// the whole patch or none of it. Pops `true` when something was saved so the caller can reload.
