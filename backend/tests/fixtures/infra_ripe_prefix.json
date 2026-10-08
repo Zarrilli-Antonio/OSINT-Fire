@@ -1,0 +1,54 @@
+{
+ "messages": [
+  [
+   "warning",
+   "Given resource is not announced but result has been aligned to first-level less-specific (8.8.8.0/24)."
+  ]
+ ],
+ "see_also": [
+  {
+   "relation": "less-specific",
+   "resource": "8.0.0.0/9"
+  },
+  {
+   "relation": "less-specific",
+   "resource": "8.0.0.0/12"
+  }
+ ],
+ "version": "1.3",
+ "data_call_name": "prefix-overview",
+ "data_call_status": "supported",
+ "cached": true,
+ "query_id": "20261008092324-343e2a47-f1b9-4053-910f-9fb5253540b7",
+ "process_time": 8,
+ "server_id": "app173",
+ "build_version": "v0.11.21-2026.09.30",
+ "pipeline": "1443526",
+ "status": "ok",
+ "status_code": 200,
+ "time": "2026-10-08T09:23:24.826938",
+ "data": {
+  "is_less_specific": true,
+  "announced": true,
+  "asns": [
+   {
+    "asn": 15169,
+    "holder": "GOOGLE - Google LLC"
+   }
+  ],
+  "related_prefixes": [
+   "8.0.0.0/9",
+   "8.0.0.0/12"
+  ],
+  "resource": "8.8.8.0/24",
+  "type": "prefix",
+  "block": {
+   "resource": "8.0.0.0/8",
+   "desc": "Administered by ARIN",
+   "name": "IANA IPv4 Address Space Registry"
+  },
+  "actual_num_related": 2,
+  "query_time": "2026-10-08T00:00:00",
+  "num_filtered_out": 0
+ }
+}

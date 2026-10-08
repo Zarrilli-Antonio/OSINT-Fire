@@ -38,7 +38,7 @@ class LangScope extends InheritedNotifier<ValueNotifier<String>> {
 
 /// Entity types the user can pick by name (seed types and the types offered for hand-made nodes), as [English source, canonical type].
 const _pickableTypes = <String, String>{
-  'Dominio': 'Domain', 'Email': 'Email', 'Username': 'Username', 'IP': 'IP', 'Telefono': 'Phone', 'Persona': 'Person', 'Azienda': 'Company',
+  'Dominio': 'Domain', 'Email': 'Email', 'Username': 'Username', 'IP': 'IP', 'Telefono': 'Phone', 'Portafoglio': 'Wallet', 'Persona': 'Person', 'Azienda': 'Company',
   'Account': 'Account', 'Luogo': 'Place', 'Evento': 'Event', 'Oggetto': 'Object', 'Documento': 'Document', 'Nota': 'Note',
 };
 

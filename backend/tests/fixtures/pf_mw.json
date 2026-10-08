@@ -1,0 +1,16 @@
+{
+ "batchcomplete": "",
+ "query": {
+  "users": [
+   {
+    "userid": 24,
+    "name": "Jimbo Wales",
+    "editcount": 15133,
+    "registration": "2001-03-27T20:47:31Z",
+    "groups": [
+     "extendedconfirmed"
+    ]
+   }
+  ]
+ }
+}

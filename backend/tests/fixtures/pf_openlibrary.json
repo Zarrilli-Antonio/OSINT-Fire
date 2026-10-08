@@ -1,0 +1,28 @@
+{
+ "website": [
+  "http://abitofgeorge.com"
+ ],
+ "displayname": "George",
+ "description": {
+  "type": "/type/text",
+  "value": "<a href=\"http://www.flickr.com/photos/george/2300891832/\" title=\"Can you see me??!?!??! by George, on Flickr\"><img src=\"http://farm4.static.flickr.com/3012/2300891832_af93f81f37_m.jpg\" align=\"right\" hspace=\"20\" width=\"240\" height=\"180\" alt=\"Can you see me??!?!??!\" /></a>Hello! I used to work at the Internet Archive on the Open Library project. I also made [a group on Flickr][3] just in case you enjoy taking photos of books. There's a natty way to join Flickr photos with Open Library books, you see.\r\n\r\nNow I own my own business called <a href=\"http://gfns.uk\">Good, Form & Spectacle</a>, which specialises in digital and product design for cultural heritage endeavours.\r\n\r\n###Some Favourite Authors###\r\n\r\n[Iris Murdoch][4], [Dorothy Parker][5], [Roald Dahl][6], [Sylvia Plath][7], [Jeffrey Eugenides][8], [Alberto Manguel][9], [Janet Frame][10], [Franz Kafka][11], [Angela Carter][12], [Brothers Grimm][13], [Douglas Coupland][14], [Peter Carey][15], [Hubert Selby][16], [Martin Amis][17], [Jorge Luis Borges][18], [Aimee Bender][19] and [Alain de Botton][20].\r\n\r\n###Some Favourite Books###\r\n\r\nThe Magic Faraway Tree, Amelia Bedelia, Sula, The Colour Purple, The Very Long Dog, [In Me Own Words: The Autobiography of Bigfoot][21], The Odyssey, Girlfriend in a Coma, The Lovely Bones, The Colony of Unrequited Dreams.\r\n\r\n\r\n  [1]: http://blog.openlibrary.org\r\n  [2]: http://twitter.com/openlibrary\r\n  [3]: http://www.flickr.com/groups/openlibrary/\r\n  [4]: http://openlibrary.org/authors/OL135196A/Iris_Murdoch\r\n  [5]: http://openlibrary.org/authors/OL1910551A/Dorothy_Parker\r\n  [6]: http://openlibrary.org/authors/OL34184A/Roald_Dahl\r\n  [7]: http://openlibrary.org/authors/OL4327652A/Sylvia_Plath\r\n  [8]: http://openlibrary.org/authors/OL720924A/Jeffrey_Eugenides\r\n  [9]: http://openlibrary.org/authors/OL30928A/Alberto_Manguel\r\n  [10]: http://openlibrary.org/authors/OL4371097A/Janet_Frame\r\n  [11]: http://openlibrary.org/authors/OL33146A/Franz_Kafka\r\n  [12]: http://openlibrary.org/authors/OL54959A/\r\n  [13]: http://openlibrary.org/authors/OL2658408A/\r\n  [14]: http://openlibrary.org/authors/OL20763A/\r\n  [15]: http://openlibrary.org/authors/OL194885A/\r\n  [16]: http://openlibrary.org/authors/OL401235A/\r\n  [17]: http://openlibrary.org/authors/OL4728950A/\r\n  [18]: http://openlibrary.org/authors/OL18928A/\r\n  [19]: http://openlibrary.org/authors/OL34266A/\r\n  [20]: http://openlibrary.org/authors/OL2659735A/\r\n  [21]: http://openlibrary.org/b/OL8337663M/In-Me-Own-Words"
+ },
+ "permission": {
+  "key": "/people/george08/permission"
+ },
+ "last_modified": {
+  "type": "/type/datetime",
+  "value": "2016-01-03T13:27:50.719196"
+ },
+ "latest_revision": 58,
+ "key": "/people/george08",
+ "created": {
+  "type": "/type/datetime",
+  "value": "2009-04-28T03:21:38.185424"
+ },
+ "m": "edit",
+ "type": {
+  "key": "/type/user"
+ },
+ "revision": 58
+}

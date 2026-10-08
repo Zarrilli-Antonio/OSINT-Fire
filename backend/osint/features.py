@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from . import i18n, settings
-from .models import norm
+from .models import norm, wallet_kind
 
 MAX_TAGS, MAX_TAG_LEN, MAX_SEEDS = 12, 30, 500
 
@@ -66,6 +66,8 @@ def _detect(tok: str) -> tuple[str, str] | None:
         pass
     if _PHONE.match(tok):
         return "Telefono", tok
+    if wallet_kind(tok):
+        return "Portafoglio", tok
     if _DOMAIN.match(tok):
         return "Dominio", tok
     return None

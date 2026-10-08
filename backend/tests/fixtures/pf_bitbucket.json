@@ -1,0 +1,14 @@
+{
+ "type": "workspace",
+ "name": "Atlassian",
+ "slug": "atlassian",
+ "created_on": "2018-11-29T02:26:39.297476+00:00",
+ "links": {
+  "html": {
+   "href": "https://bitbucket.org/atlassian/"
+  },
+  "avatar": {
+   "href": "https://bitbucket.org/workspaces/atlassian/avatar/"
+  }
+ }
+}

@@ -13,6 +13,7 @@ import 'api_views.dart';
 import 'backend.dart';
 import 'diff.dart';
 import 'filters.dart';
+import 'import_archive_dialog.dart';
 import 'import_dialog.dart';
 import 'l10n.dart';
 import 'graph_view.dart';
@@ -702,7 +703,13 @@ class _HomeState extends State<Home> {
     return fmtDateTime(DateTime.fromMillisecondsSinceEpoch((ts * 1000).round()));
   }
 
+  Future<void> _importArchive() async {
+    final id = await showDialog<int>(context: context, builder: (_) => const ImportArchiveDialog());
+    if (id != null && mounted) await _open(id);
+  }
+
   Future<void> _export(String fmt) async {
+    if (fmt == 'import') return _importArchive();
     if (inv == null) return;
     if (fmt == 'report') {
       final path = await showDialog<String>(context: context, builder: (_) => ReportDialog(inv: inv!, defaultTitle: name.text.trim(), hasHidden: _raw.hidden.isNotEmpty));
@@ -725,7 +732,7 @@ class _HomeState extends State<Home> {
         }
         done = dir;
       } else {
-        done = '$dl${Platform.pathSeparator}osint-$inv.$fmt';
+        done = '$dl${Platform.pathSeparator}osint-$inv.${fmt == 'archive' ? 'osint.json' : fmt}';
         await File(done).writeAsBytes(await exportBytes(inv!, fmt, includeHidden: viewMode != 'clean'));
       }
       setState(() => log.insert(0, t('Exported: {0}', [done])));
@@ -973,17 +980,19 @@ class _HomeState extends State<Home> {
 
   Widget _exportMenu() => PopupMenuButton<String>(
         tooltip: t('Export'),
-        enabled: inv != null,
         icon: const Icon(Icons.file_download_outlined, size: 18),
         onSelected: _export,
         itemBuilder: (_) => [
-          const PopupMenuItem(value: 'pdf', child: Text('PDF')),
-          const PopupMenuItem(value: 'md', child: Text('Markdown')),
-          PopupMenuItem(value: 'obsidian', child: Text(t('Obsidian folder'))),
-          const PopupMenuItem(value: 'graphml', child: Text('GraphML')),
+          PopupMenuItem(value: 'pdf', enabled: inv != null, child: const Text('PDF')),
+          PopupMenuItem(value: 'md', enabled: inv != null, child: const Text('Markdown')),
+          PopupMenuItem(value: 'obsidian', enabled: inv != null, child: Text(t('Obsidian folder'))),
+          PopupMenuItem(value: 'graphml', enabled: inv != null, child: const Text('GraphML')),
           const PopupMenuDivider(),
-          PopupMenuItem(value: 'report', child: Text(t('Custom report…'))),
-          PopupMenuItem(value: 'proofs', child: Text(t('Saved proofs…'))),
+          PopupMenuItem(value: 'archive', enabled: inv != null, child: Text(t('Archive (can be imported again)'))),
+          PopupMenuItem(value: 'report', enabled: inv != null, child: Text(t('Custom report…'))),
+          PopupMenuItem(value: 'proofs', enabled: inv != null, child: Text(t('Saved proofs…'))),
+          const PopupMenuDivider(),
+          PopupMenuItem(value: 'import', child: Text(t('Import archive…'))),
         ],
       );
 
@@ -1085,7 +1094,7 @@ class _HomeState extends State<Home> {
                 initialValue: type,
                 isExpanded: true,
                 dropdownColor: const Color(0xFF131316),
-                items: [for (final ty in ['Dominio', 'Email', 'Username', 'IP', 'Telefono', 'Persona', 'Azienda']) DropdownMenuItem(value: ty, child: Text(typeLabel(ty), style: const TextStyle(fontSize: 12)))],
+                items: [for (final ty in ['Dominio', 'Email', 'Username', 'IP', 'Telefono', 'Portafoglio', 'Persona', 'Azienda']) DropdownMenuItem(value: ty, child: Text(typeLabel(ty), style: const TextStyle(fontSize: 12)))],
                 onChanged: (v) => setState(() => type = v!),
               ),
             ),

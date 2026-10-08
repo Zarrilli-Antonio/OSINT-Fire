@@ -13,7 +13,9 @@ String _p(String s) => Uri.encodeComponent(s);
 
 /// External lookups worth doing by hand for an entity: sites that need a browser, a login or a captcha, so the app
 /// opens them instead of scraping. [imageUrl] is the original avatar URL for reverse image search.
-List<PivotLink> pivotLinks(String type, String value, {String? imageUrl}) {
+List<PivotLink> pivotLinks(String type, String value, {String? imageUrl}) => [..._core(type, value, imageUrl: imageUrl), ..._more(type, value)];
+
+List<PivotLink> _core(String type, String value, {String? imageUrl}) {
   switch (type) {
     case 'Dominio':
       return [
@@ -116,6 +118,120 @@ List<PivotLink> pivotLinks(String type, String value, {String? imageUrl}) {
         PivotLink('Yandex', 'https://yandex.com/images/search?rpt=imageview&url=${_q(u)}'),
         PivotLink('Bing', 'https://www.bing.com/images/search?view=detailv2&iss=sbi&q=imgurl:${_q(u)}'),
         PivotLink(t('Open original'), u),
+      ];
+  }
+  return const [];
+}
+
+/// More public search engines, registries and lookup sites per type (links only: nothing is fetched by the app).
+List<PivotLink> _more(String type, String value) {
+  final quoted = _q('"$value"');
+  switch (type) {
+    case 'Dominio':
+      return [
+        PivotLink('crt.sh', 'https://crt.sh/?q=${_q(value)}'),
+        PivotLink('DNSDumpster', 'https://dnsdumpster.com/'),
+        PivotLink('ViewDNS', 'https://viewdns.info/reverseip/?host=${_q(value)}&t=1'),
+        PivotLink('SecurityHeaders', 'https://securityheaders.com/?q=${_q(value)}&followRedirects=on'),
+        PivotLink('SSL Labs', 'https://www.ssllabs.com/ssltest/analyze.html?d=${_q(value)}'),
+        PivotLink('Netcraft', 'https://sitereport.netcraft.com/?url=${_q(value)}'),
+        PivotLink('AlienVault OTX', 'https://otx.alienvault.com/indicator/domain/${_p(value)}'),
+        PivotLink('Pulsedive', 'https://pulsedive.com/indicator/?ioc=${_q(value)}'),
+        PivotLink('URLhaus', 'https://urlhaus.abuse.ch/browse.php?search=${_q(value)}'),
+        PivotLink('Hunter', 'https://hunter.io/search/${_p(value)}'),
+        PivotLink('Similarweb', 'https://www.similarweb.com/website/${_p(value)}/'),
+        PivotLink('Archive.today', 'https://archive.ph/${_p(value)}'),
+        PivotLink('Google docs', 'https://www.google.com/search?q=${_q('site:$value (filetype:pdf OR filetype:docx OR filetype:xlsx)')}'),
+        PivotLink('Google login pages', 'https://www.google.com/search?q=${_q('site:$value (inurl:login OR inurl:admin)')}'),
+        PivotLink('Bing', 'https://www.bing.com/search?q=${_q('domain:$value')}'),
+        PivotLink('DuckDuckGo', 'https://duckduckgo.com/?q=${_q('site:$value')}'),
+        PivotLink('Yandex', 'https://yandex.com/search/?text=${_q('host:$value')}'),
+      ];
+    case 'IP':
+      return [
+        PivotLink('IPinfo', 'https://ipinfo.io/${_p(value)}'),
+        PivotLink('Netlas', 'https://app.netlas.io/host/${_p(value)}/'),
+        PivotLink('Criminal IP', 'https://www.criminalip.io/asset/report/${_p(value)}'),
+        PivotLink('Cisco Talos', 'https://talosintelligence.com/reputation_center/lookup?search=${_q(value)}'),
+        PivotLink('AlienVault OTX', 'https://otx.alienvault.com/indicator/ip/${_p(value)}'),
+        PivotLink('Pulsedive', 'https://pulsedive.com/indicator/?ioc=${_q(value)}'),
+        PivotLink('IPVoid', 'https://www.ipvoid.com/ip-blacklist-check/?ip=${_q(value)}'),
+        PivotLink('Spamhaus', 'https://check.spamhaus.org/results/?query=${_q(value)}'),
+        PivotLink('DNSlytics', 'https://dnslytics.com/ip/${_p(value)}'),
+        PivotLink('Google', 'https://www.google.com/search?q=$quoted'),
+      ];
+    case 'Email':
+      return [
+        PivotLink('DuckDuckGo', 'https://duckduckgo.com/?q=$quoted'),
+        PivotLink('Yandex', 'https://yandex.com/search/?text=$quoted'),
+        PivotLink('EmailRep', 'https://emailrep.io/${_p(value)}'),
+        PivotLink('Hunter verify', 'https://hunter.io/email-verifier/${_p(value)}'),
+        PivotLink('LeakCheck', 'https://leakcheck.io/'),
+        PivotLink('Pastes (Google)', 'https://www.google.com/search?q=${_q('"$value" (site:pastebin.com OR site:ghostbin.com OR site:paste.ee)')}'),
+        PivotLink('Documents (Google)', 'https://www.google.com/search?q=${_q('"$value" (filetype:pdf OR filetype:xlsx OR filetype:docx)')}'),
+        PivotLink('GitLab', 'https://gitlab.com/search?search=${_q(value)}'),
+        PivotLink('Skype/Teams', 'https://www.google.com/search?q=${_q('"$value" site:linkedin.com')}'),
+      ];
+    case 'Username':
+      return [
+        PivotLink('DuckDuckGo', 'https://duckduckgo.com/?q=$quoted'),
+        PivotLink('Yandex', 'https://yandex.com/search/?text=$quoted'),
+        PivotLink('Bluesky', 'https://bsky.app/profile/${_p(value)}.bsky.social'),
+        PivotLink('Mastodon', 'https://mastodon.social/@${_p(value)}'),
+        PivotLink('GitLab', 'https://gitlab.com/${_p(value)}'),
+        PivotLink('Codeberg', 'https://codeberg.org/${_p(value)}'),
+        PivotLink('Medium', 'https://medium.com/@${_p(value)}'),
+        PivotLink('Tumblr', 'https://${_p(value)}.tumblr.com'),
+        PivotLink('Flickr', 'https://www.flickr.com/people/${_p(value)}/'),
+        PivotLink('Vimeo', 'https://vimeo.com/${_p(value)}'),
+        PivotLink('SoundCloud', 'https://soundcloud.com/${_p(value)}'),
+        PivotLink('Steam', 'https://steamcommunity.com/id/${_p(value)}'),
+        PivotLink('Behance', 'https://www.behance.net/${_p(value)}'),
+        PivotLink('Dribbble', 'https://dribbble.com/${_p(value)}'),
+        PivotLink('Patreon', 'https://www.patreon.com/${_p(value)}'),
+        PivotLink('Linktree', 'https://linktr.ee/${_p(value)}'),
+        PivotLink('Keybase', 'https://keybase.io/${_p(value)}'),
+        PivotLink('Docker Hub', 'https://hub.docker.com/u/${_p(value)}'),
+        PivotLink('VK', 'https://vk.com/${_p(value)}'),
+        PivotLink('Wayback', 'https://web.archive.org/web/*/${_p(value)}'),
+      ];
+    case 'Persona':
+      return [
+        PivotLink('DuckDuckGo', 'https://duckduckgo.com/?q=$quoted'),
+        PivotLink('Bing', 'https://www.bing.com/search?q=$quoted'),
+        PivotLink('Yandex', 'https://yandex.com/search/?text=$quoted'),
+        PivotLink('Wikipedia', 'https://www.wikipedia.org/w/index.php?search=${_q(value)}'),
+        PivotLink('Wikidata', 'https://www.wikidata.org/w/index.php?search=${_q(value)}'),
+        PivotLink('ORCID', 'https://orcid.org/orcid-search/search?searchQuery=${_q(value)}'),
+        PivotLink('ResearchGate', 'https://www.researchgate.net/search/researcher?q=${_q(value)}'),
+        PivotLink('Archive.org', 'https://archive.org/search?query=${_q(value)}'),
+        PivotLink('OpenSanctions', 'https://www.opensanctions.org/search/?q=${_q(value)}'),
+        PivotLink('ICIJ Offshore Leaks', 'https://offshoreleaks.icij.org/search?q=${_q(value)}'),
+        PivotLink('OFAC sanctions', 'https://sanctionssearch.ofac.treas.gov/'),
+        PivotLink('Documents (Google)', 'https://www.google.com/search?q=${_q('"$value" (filetype:pdf OR filetype:docx)')}'),
+        PivotLink('Patents (Google)', 'https://patents.google.com/?inventor=${_q(value)}'),
+      ];
+    case 'Azienda':
+      return [
+        PivotLink('DuckDuckGo', 'https://duckduckgo.com/?q=$quoted'),
+        PivotLink('Bing', 'https://www.bing.com/search?q=$quoted'),
+        PivotLink('Wikipedia', 'https://www.wikipedia.org/w/index.php?search=${_q(value)}'),
+        PivotLink('Wikidata', 'https://www.wikidata.org/w/index.php?search=${_q(value)}'),
+        PivotLink('GLEIF (LEI)', 'https://search.gleif.org/#/search/simpleSearch=${_p(value)}'),
+        PivotLink('SEC EDGAR', 'https://www.sec.gov/cgi-bin/browse-edgar?company=${_q(value)}&action=getcompany'),
+        PivotLink('OpenSanctions', 'https://www.opensanctions.org/search/?q=${_q(value)}'),
+        PivotLink('ICIJ Offshore Leaks', 'https://offshoreleaks.icij.org/search?q=${_q(value)}'),
+        PivotLink('Companies House (UK)', 'https://find-and-update.company-information.service.gov.uk/search?q=${_q(value)}'),
+        PivotLink('Patents (Google)', 'https://patents.google.com/?assignee=${_q(value)}'),
+        PivotLink('EUIPO trademarks', 'https://euipo.europa.eu/eSearch/#basic/1+1+1+1/100+100+100+100/${_p(value)}'),
+        PivotLink('Archive.org', 'https://archive.org/search?query=${_q(value)}'),
+      ];
+    case 'Telefono':
+      return [
+        PivotLink('DuckDuckGo', 'https://duckduckgo.com/?q=$quoted'),
+        PivotLink('Bing', 'https://www.bing.com/search?q=$quoted'),
+        PivotLink('Signal', 'https://signal.me/#p/${_p(value)}'),
+        PivotLink('Pastes (Google)', 'https://www.google.com/search?q=${_q('"$value" (site:pastebin.com OR site:ghostbin.com)')}'),
       ];
   }
   return const [];

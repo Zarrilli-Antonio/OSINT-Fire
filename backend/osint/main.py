@@ -1,4 +1,5 @@
 import asyncio
+import json
 import time
 from contextlib import asynccontextmanager
 
@@ -8,7 +9,7 @@ from pydantic import BaseModel, Field
 
 from . import collectors
 from .db import DB
-from . import ai, connections, features, i18n, monitor, proofs, reports, settings
+from . import ai, archive, connections, features, i18n, monitor, proofs, reports, settings
 from .db import without_hidden
 from .export import to_graphml
 from .paths import db_path
@@ -27,7 +28,7 @@ db = DB(db_path())
 settings.load(db)
 tasks: dict[int, asyncio.Task] = {}
 events: dict[int, list[dict]] = {}  # in-memory, replayed to late SSE subscribers
-SEED_TYPES = {"Dominio", "Email", "Username", "IP", "Persona", "Azienda", "Telefono"}
+SEED_TYPES = {"Dominio", "Email", "Username", "IP", "Persona", "Azienda", "Telefono", "Portafoglio"}
 
 
 class Seed(BaseModel):
@@ -203,6 +204,8 @@ def export(inv: int, format: str = "json", include_hidden: bool = False):
     meta = db.get_investigation(inv)
     if not meta:
         raise HTTPException(404)
+    if format == "archive":
+        return Response(json.dumps(archive.build(db, inv, meta)), media_type="application/json")
     g = db.graph(inv)
     if not include_hidden:
         g = without_hidden(g)
@@ -217,7 +220,7 @@ def export(inv: int, format: str = "json", include_hidden: bool = False):
             return {"files": reports.obsidian(g, meta)}
         case "json":
             return g
-    raise HTTPException(422, "format: json|graphml|md|pdf|obsidian")
+    raise HTTPException(422, "format: json|graphml|md|pdf|obsidian|archive")
 
 
 class ReportBody(BaseModel):
@@ -521,3 +524,4 @@ async def stream(inv: int):
 
 
 features.register(app, lambda: db)  # tags, seed parsing, diff, timeline
+archive.register(app, lambda: db)  # lossless export / import

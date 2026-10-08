@@ -90,7 +90,7 @@ def parse_shodan(ip: str, d: dict) -> list[Finding]:
         label = f"{banner.get('port')}/{banner.get('transport', 'tcp')}" + (f" {prod}" if prod else "")
         out.append(Finding(me, "servizio_esposto", ("Servizio", label), 0.9, "banner raccolto da Shodan", url=url, pivot=False))
     for v in list(d.get("vulns", []))[:30]:
-        out.append(Finding(me, "vulnerabilità_nota", ("Vulnerabilità", v), 0.5, "CVE associata da Shodan (non verificata)", url=url, pivot=False))
+        out.append(Finding(me, "vulnerabilità_nota", ("Vulnerabilità", v), 0.5, "CVE associata da Shodan (non verificata)", url=url))
     return out
 
 

@@ -213,7 +213,7 @@ Future<void> expandInvestigation(int inv, List<(String, String)> seeds, int maxD
 (String, String)? expandTarget(GNode n) {
   if (n.members.isNotEmpty) return null;
   switch (n.type) {
-    case 'Dominio' || 'Email' || 'Username' || 'IP' || 'Persona' || 'Azienda':
+    case 'Dominio' || 'Email' || 'Username' || 'IP' || 'Persona' || 'Azienda' || 'Portafoglio':
       return (n.type, n.value);
     case 'Account':
       final u = Uri.tryParse(n.value);

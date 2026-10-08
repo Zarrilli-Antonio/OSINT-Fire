@@ -5,6 +5,7 @@ const Map<String, List<String>> trCore = {
   'Username': ['Username', 'Nombre de usuario', 'Benutzername'],
   'IP': ['IP', 'IP', 'IP'],
   'Phone': ['Telefono', 'Teléfono', 'Telefon'],
+  'Wallet': ['Portafoglio', 'Cartera', 'Wallet'],
   'Person': ['Persona', 'Persona', 'Person'],
   'Company': ['Azienda', 'Empresa', 'Unternehmen'],
   'Account': ['Account', 'Cuenta', 'Konto'],

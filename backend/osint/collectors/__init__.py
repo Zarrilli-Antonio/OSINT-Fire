@@ -42,4 +42,4 @@ def applicable(type_: str) -> list[Collector]:
 
 
 # Import for registration side effect.
-from . import domain, email, ip, username, wikidata, web, github, subdomains, profiles, people, tls, pgp, phone, keys, social_html, keyed, extra, web_deep, connected, more  # noqa: E402,F401
+from . import domain, email, ip, username, wikidata, web, github, subdomains, profiles, people, tls, pgp, phone, keys, social_html, keyed, extra, web_deep, connected, more, more_profiles, more_infra, more_threat, more_records, more_academic, more_crypto  # noqa: E402,F401

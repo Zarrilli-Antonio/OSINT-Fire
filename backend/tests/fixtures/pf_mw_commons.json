@@ -1,0 +1,13 @@
+{
+ "batchcomplete": "",
+ "query": {
+  "users": [
+   {
+    "userid": 121,
+    "name": "Jimbo Wales",
+    "editcount": 214,
+    "registration": null
+   }
+  ]
+ }
+}

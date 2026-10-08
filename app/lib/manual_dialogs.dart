@@ -4,7 +4,7 @@ import 'l10n.dart';
 import 'theme.dart';
 
 // canonical (stored) type names; shown through typeLabel()
-const nodeTypes = ['Persona', 'Azienda', 'Email', 'Username', 'Dominio', 'IP', 'Telefono', 'Account', 'Luogo', 'Evento', 'Oggetto', 'Documento', 'Nota'];
+const nodeTypes = ['Persona', 'Azienda', 'Email', 'Username', 'Dominio', 'IP', 'Telefono', 'Portafoglio', 'Account', 'Luogo', 'Evento', 'Oggetto', 'Documento', 'Nota'];
 // English source strings of the suggested relation names; shown through t(), stored as typed
 const bridgeLabels = ['linked to', 'same person', 'works for', 'owns', 'family member of', 'contact of', 'uses', 'suspected link to', 'located in'];
 

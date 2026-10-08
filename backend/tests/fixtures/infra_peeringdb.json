@@ -1,0 +1,17 @@
+{
+ "data": [
+  {
+   "name": "Google LLC",
+   "aka": "Google, YouTube (for Google Fiber see AS16591 record)",
+   "website": "https://about.google/intl/en/",
+   "asn": 15169,
+   "irr_as_set": "RADB::AS-GOOGLE",
+   "info_type": "Content",
+   "info_prefixes4": 15000,
+   "info_prefixes6": 10000,
+   "notes": "Peering Operational Issues: Contact noc@google.com 24x7\n\nPeering Requests: https://isp.google.com/iwantpeering\n\nThis link also has information about our traffic delivery and management practices.\n\nPle",
+   "policy_url": "https://peering.google.com/#/options/peering"
+  }
+ ],
+ "meta": {}
+}

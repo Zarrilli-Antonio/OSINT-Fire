@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="OpenStreetMap server" copyright="OpenStreetMap and contributors" attribution="http://www.openstreetmap.org/copyright" license="http://opendatacommons.org/licenses/odbl/1-0/">
+<changeset id="189081841" created_at="2026-09-15T20:42:58Z" open="false" comments_count="0" changes_count="9" created_count="3" modified_count="6" deleted_count="0" closed_at="2026-09-15T20:42:58Z" min_lat="37.2983097" min_lon="-107.8749016" max_lat="37.3025764" max_lon="-107.8732864" uid="1" user="Steve">
+  <tag k="changesets_count" v="1184"/>
+  <tag k="comment" v="fix some oneways in durango co"/>
+  <tag k="created_by" v="iD 2.42.2"/>
+  <tag k="host" v="https://www.openstreetmap.org/edit"/>
+  <tag k="imagery_used" v="Bing Maps Aerial"/>
+  <tag k="locale" v="en-GB"/>
+</changeset></osm>

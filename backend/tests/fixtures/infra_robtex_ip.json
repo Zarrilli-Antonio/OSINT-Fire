@@ -1,0 +1,33 @@
+{
+ "status": "ok",
+ "city": "",
+ "country": "US",
+ "as": 15169,
+ "bgproute": "8.8.8.0/24",
+ "asname": "Google",
+ "asdesc": "GOOGLE",
+ "whoisdesc": "Google, Inc",
+ "routedesc": "Google LLC",
+ "pas": [
+  {
+   "o": "pepparroten.se",
+   "t": 1791451347
+  },
+  {
+   "o": "33lenterajingga.tech",
+   "t": 1791451347
+  },
+  {
+   "o": "4bajulipat.tech",
+   "t": 1791451347
+  },
+  {
+   "o": "002mlin6.freeddns.org",
+   "t": 1791451347
+  },
+  {
+   "o": "22dandanmulu.tech",
+   "t": 1791451347
+  }
+ ]
+}

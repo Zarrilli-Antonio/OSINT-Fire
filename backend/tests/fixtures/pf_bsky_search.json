@@ -1,0 +1,32 @@
+{
+ "actors": [
+  {
+   "did": "did:plc:oky5czdrnfjpqslsw2a5iclo",
+   "handle": "jay.bsky.team",
+   "displayName": "Jay 🦋",
+   "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:oky5czdrnfjpqslsw2a5iclo/bafkreihxtnc37g7jqdcgidtkknwuswtjiijcdnc6cx4imc4oq33cnsc5da",
+   "createdAt": "2022-11-17T06:31:40.296Z",
+   "description": "Founder & Chief Innovation Officer @ Bluesky\n\nWorking on @attie.ai\n\n🌱 🪴 🌳",
+   "indexedAt": "2026-03-29T21:16:33.460Z"
+  },
+  {
+   "did": "did:plc:bpna2qi2e44fafbhhtqjak3x",
+   "handle": "jaywillis.net",
+   "displayName": "Jay Willis",
+   "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:bpna2qi2e44fafbhhtqjak3x/bafkreihrm2weuxo5syvg4jhihmygqccb2lyigyfeb6iabryrugauyx5cgy",
+   "createdAt": "2023-04-29T20:22:13.446Z",
+   "description": "I write about courts, democracy, media, and the raccoon family living in a tree behind my house. Bluesky’s ONLY fantasy football guru. EIC @ballsandstrikes.org, more writing at jaywillis.net.",
+   "indexedAt": "2026-09-23T02:58:18.556Z"
+  },
+  {
+   "did": "did:plc:27eihnclsnjw3h55w53g2ur2",
+   "handle": "jaysonst.bsky.social",
+   "displayName": "Jayson Stark",
+   "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:27eihnclsnjw3h55w53g2ur2/bafkreibr5b4lp5jajoezewppffg2lhe2pep53yyl6jt3fboeicb5it5q3u",
+   "createdAt": "2023-08-22T19:28:41.297Z",
+   "description": "Baseball writer at The Athletic. Starkville pod. MLB Net. Winner of 2019 BBWAA Career Excellence Award. Launched hot dogs with the Phanatic. Living the dream",
+   "indexedAt": "2026-09-27T16:07:44.061Z"
+  }
+ ],
+ "cursor": "eyJzIjpbMTAwMCwwLjAwMDAwNTE3OTY0NzQsImRpZDpwbGM6MjdlaWhuY2xzbmp3M2g1NXc1M2cydXIyIl19"
+}

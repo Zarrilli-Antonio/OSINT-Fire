@@ -29,6 +29,7 @@ const _typeColors = {
   'Tecnologia': Color(0xFFB794F6),
   'Registrazione': Color(0xFFE5C07B),
   'Telefono': Color(0xFFFFA657),
+  'Portafoglio': Color(0xFFF7B731),
   'Chiave SSH': Color(0xFFC9D1D9),
   'Chiave PGP': Color(0xFFB1BAC4),
   'Data': Color(0xFF79C0FF),

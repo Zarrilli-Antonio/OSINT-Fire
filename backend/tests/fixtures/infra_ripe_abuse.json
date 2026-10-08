@@ -1,0 +1,28 @@
+{
+ "messages": [],
+ "see_also": [],
+ "version": "2.1",
+ "data_call_name": "abuse-contact-finder",
+ "data_call_status": "supported",
+ "cached": true,
+ "query_id": "20261008092324-51e15184-d2f7-40ab-988e-6439aee275d4",
+ "process_time": 8,
+ "server_id": "app162",
+ "build_version": "v0.11.21-2026.09.30",
+ "pipeline": "1443526",
+ "status": "ok",
+ "status_code": 200,
+ "time": "2026-10-08T09:23:24.607195",
+ "data": {
+  "abuse_contacts": [
+   "network-abuse@google.com"
+  ],
+  "authoritative_rir": "arin",
+  "latest_time": "2026-10-08T08:42:18",
+  "earliest_time": "2026-10-08T08:42:18",
+  "parameters": {
+   "resource": "8.8.8.8",
+   "cache": null
+  }
+ }
+}

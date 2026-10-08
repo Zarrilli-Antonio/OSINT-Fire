@@ -21,7 +21,7 @@
 ## What it does
 
 - **Searches many sources at once.** From a seed (`example.com`, `jane@example.com`, `jdoe`, `203.0.113.5`, a name, a company, a phone)
-  100+ collectors query DNS, certificate transparency, RDAP/WHOIS, web archives, code and social platforms, breach indexes,
+  170+ collectors query DNS, certificate transparency, RDAP/WHOIS, web archives, code and social platforms, breach indexes,
   registries and more. Every result keeps its source and a confidence.
 - **Follows the trail.** What a source finds (an email on a website, a username in a profile) becomes a new seed, down to the depth you choose.
   Expand any node later, or **refresh** the whole search to pick up what is new.
@@ -35,7 +35,7 @@
 - **Watches for you.** Choose "every N days" on a search: while the app is open it re-runs it and raises an alert when something new appears.
 - **Keeps proofs.** Save a copy of the page behind a finding with its time and SHA-256; optionally ask the Internet Archive for a copy too (it is told the address, so it is off unless you tick it).
 - **Imports lists.** Paste a list or CSV of domains, emails, IPs, phones, handles and review the detected seeds.
-- **Exports.** PDF, Markdown, an Obsidian vault, GraphML, and customisable reports (pick sections, title, header/footer, logo; PDF, Markdown or one standalone HTML file).
+- **Exports and imports.** PDF, Markdown, an Obsidian vault, GraphML, a lossless archive you can import back (also into another computer), and customisable reports (pick sections, title, header/footer, logo; PDF, Markdown or one standalone HTML file).
 - **Connects to AI.** An analyst panel (summary, review, what to search next) and an MCP server so assistants like Claude Desktop can drive it.
 
 <p align="center">

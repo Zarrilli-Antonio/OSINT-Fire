@@ -31,7 +31,7 @@ async def internetdb(ip: str) -> list[Finding]:
     out += [Finding(("IP", ip), "porta_aperta", ("Servizio", f"{ip}:{p}"), 0.9, "porta rilevata da Shodan", url=url,
                     pivot=False) for p in j.get("ports", [])]
     out += [Finding(("IP", ip), "vulnerabilità_nota", ("Vulnerabilità", v), 0.5, "CVE associata da Shodan (non verificata)",
-                    url=url, pivot=False) for v in j.get("vulns", [])]
+                    url=url) for v in j.get("vulns", [])]
     return out
 
 

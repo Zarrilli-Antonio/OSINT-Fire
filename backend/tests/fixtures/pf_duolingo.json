@@ -1,0 +1,35 @@
+{
+ "users": [
+  {
+   "id": 14,
+   "acquisitionSurveyReason": "none",
+   "resurrectedAcquisitionSurveyReason": "none",
+   "bio": "",
+   "fromLanguage": "en",
+   "classroomLeaderboardsEnabled": false,
+   "learningLanguage": "fr",
+   "currentCourseId": "DUOLINGO_FR_EN",
+   "location": "Guatemala",
+   "motivation": "none",
+   "name": "Luis",
+   "picture": "//d3gq3s1iyyx31w.cloudfront.net/static/render/bg/BackgroundColor-15/Body-1/ClothingColor-9/CostumeArtboard-62/Expression-47/EyeColor-1/FacialHair-0/FacialHairColor-1/Glasses-1/GlassesColor-8/HasCostume-1/Headwear-0/HeadwearColor-1/MainHair-66/MainHairColor-2/Nose%20Piercing-0/Piercings-0/SkinTone-2/Wrinkles-0",
+   "profileCountry": null,
+   "canUseModerationTools": true,
+   "streak": 3967,
+   "username": "Luis",
+   "emailVerified": true,
+   "hasPlus": true,
+   "creationDate": 1322621037,
+   "hasRecentActivity15": false,
+   "hasFacebookId": true,
+   "hasGoogleId": true,
+   "hasAppleId": false,
+   "requiresSsoLogin": true,
+   "hasPhoneNumber": false,
+   "shouldForceConnectPhoneNumber": false,
+   "totalXp": 384521,
+   "betaStatus": "INELIGIBLE",
+   "shakeToReportEnabled": null
+  }
+ ]
+}

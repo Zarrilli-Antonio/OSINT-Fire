@@ -1,0 +1,22 @@
+{
+  "isValid" : true,
+  "requestDate" : "2026-10-08T09:22:36.934Z",
+  "userError" : "VALID",
+  "name" : "MOTOROLA SOLUTIONS ITALIA SRL",
+  "address" : "LARGO FRANCESCO RICHINI 6 \n20122 MILANO MI\n",
+  "requestIdentifier" : "",
+  "originalVatNumber" : "00743110157",
+  "vatNumber" : "00743110157",
+  "viesApproximate" : {
+    "name" : "---",
+    "street" : "---",
+    "postalCode" : "---",
+    "city" : "---",
+    "companyType" : "---",
+    "matchName" : 3,
+    "matchStreet" : 3,
+    "matchPostalCode" : 3,
+    "matchCity" : 3,
+    "matchCompanyType" : 3
+  }
+}

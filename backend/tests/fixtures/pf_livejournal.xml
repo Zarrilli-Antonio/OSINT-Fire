@@ -1,0 +1,44 @@
+<?xml version='1.0'?>
+<!--  If you are running a bot please visit this policy page outlining rules you must respect. https://www.livejournal.com/bots/  --><rdf:RDF
+   xml:lang="en"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+   xmlns:foaf="http://xmlns.com/foaf/0.1/"
+   xmlns:ya="http://blogs.yandex.ru/schema/foaf/"
+   xmlns:lj="http://www.livejournal.org/rss/lj/1.0/"
+   xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <foaf:Person>
+    <foaf:nick>brad</foaf:nick>
+    <foaf:name>Brad Fitzpatrick</foaf:name>
+    <lj:journaltitle>brad&apos;s life</lj:journaltitle>
+    <lj:journalsubtitle>bored as hell and i wanna get ill</lj:journalsubtitle>
+    <foaf:openid rdf:resource="https://brad.livejournal.com/" />
+    <ya:country dc:title="US" />
+    <ya:city dc:title="San%20Francisco" />
+    <foaf:dateOfBirth>1980-02-05</foaf:dateOfBirth>
+    <foaf:img rdf:resource="https://l-userpic.livejournal.com/54541970/2" />
+    <foaf:page>
+      <foaf:Document rdf:about="https://brad.livejournal.com/profile/">
+        <dc:title>LiveJournal.com Profile</dc:title>
+        <dc:description>Full LiveJournal.com profile, including information such as interests and bio.</dc:description>
+      </foaf:Document>
+    </foaf:page>
+    <foaf:aimChatID></foaf:aimChatID>
+    <foaf:jabberID></foaf:jabberID>
+    <foaf:msnChatID></foaf:msnChatID>
+    <foaf:yahooChatID></foaf:yahooChatID>
+    <ya:blogActivity>
+      <ya:Posts>
+        <ya:feed rdf:resource="https://brad.livejournal.com/data/rss" dc:type="application/rss+xml" />
+        <ya:posted>9352</ya:posted>
+      </ya:Posts>
+      <ya:Comments>
+        <ya:posted>0</ya:posted>
+        <ya:received>66184</ya:received>
+      </ya:Comments>
+    </ya:blogActivity>
+    <foaf:weblog rdf:resource='https://brad.livejournal.com/' lj:dateCreated='1999-05-03T21:15:22' lj:dateLastUpdated='2022-02-28T22:36:00' />
+    <foaf:homepage rdf:resource="http%3A%2F%2Fbradfitz.com%2F" dc:title="bradfitz.com" />
+    <ya:bio>Born in Iowa.</ya:bio>
+</foaf:Person></rdf:RDF>

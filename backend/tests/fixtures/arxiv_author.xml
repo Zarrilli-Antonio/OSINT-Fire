@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/LwGi0ia4bPYI4U4/ez9SQ7MhwvA</id>
+  <title>arXiv Query: search_query=au:"Yann LeCun"&amp;id_list=&amp;start=0&amp;max_results=3</title>
+  <updated>2026-10-08T09:22:17Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=au:%22Yann+LeCun%22&amp;start=0&amp;max_results=3&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>3</opensearch:itemsPerPage>
+  <opensearch:totalResults>237</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/1202.2160v2</id>
+    <title>Scene Parsing with Multiscale Feature Learning, Purity Trees, and Optimal Covers</title>
+    <updated>2012-07-13T21:32:24Z</updated>
+    <link href="https://arxiv.org/abs/1202.2160v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1202.2160v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Scene parsing, or semantic segmentation, consists in labeling each pixel in an image with the category of the object it belongs to. It is a challenging task that involves the simultaneous detection, segmentation and recognition of all the objects in the image.
+  The scene parsing method proposed here starts by computing a tree of segments from a graph of pixel dissimilarities. Simultaneously, a set of dense feature vectors is computed which encodes regions of multiple sizes centered on each pixel. The feature extractor is a multiscale convolutional network trained from raw pixels. The feature vectors associated with the segments covered by each node in the tree are aggregated and fed to a classifier which produces an estimate of the distribution of object categories contained in the segment. A subset of tree nodes that cover the image are then selected so as to maximize the average "purity" of the class distributions, hence maximizing the overall likelihood that each segment will contain a single object. The convolutional network feature extractor is trained end-to-end from raw pixels, alleviating the need for engineered features. After training, the system is parameter free.
+  The system yields record accuracies on the Stanford Background Dataset (8 classes), the Sift Flow Dataset (33 classes) and the Barcelona Dataset (170 classes) while being an order of magnitude faster than competing approaches, producing a 320 \times 240 image labeling in less than 1 second.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2012-02-10T00:30:48Z</published>
+    <arxiv:comment>9 pages, 4 figures - Published in 29th International Conference on Machine Learning (ICML 2012), Jun 2012, Edinburgh, United Kingdom</arxiv:comment>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Clément Farabet</name>
+    </author>
+    <author>
+      <name>Camille Couprie</name>
+    </author>
+    <author>
+      <name>Laurent Najman</name>
+    </author>
+    <author>
+      <name>Yann LeCun</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1202.6384v1</id>
+    <title>Fast approximations to structured sparse coding and applications to object classification</title>
+    <updated>2012-02-28T21:27:14Z</updated>
+    <link href="https://arxiv.org/abs/1202.6384v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1202.6384v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We describe a method for fast approximation of sparse coding. The input space is subdivided by a binary decision tree, and we simultaneously learn a dictionary and assignment of allowed dictionary elements for each leaf of the tree. We store a lookup table with the assignments and the pseudoinverses for each node, allowing for very fast inference. We give an algorithm for learning the tree, the dictionary and the dictionary element assignment, and In the process of describing this algorithm, we discuss the more general problem of learning the groups in group structured sparse modelling. We show that our method creates good sparse representations by using it in the object recognition framework of \cite{lazebnik06,yang-cvpr-09}. Implementing our own fast version of the SIFT descriptor the whole system runs at 20 frames per second on $321 \times 481$ sized images on a laptop with a quad-core cpu, while sacrificing very little accuracy on the Caltech 101 and 15 scenes benchmarks.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2012-02-28T21:27:14Z</published>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Arthur Szlam</name>
+    </author>
+    <author>
+      <name>Karol Gregor</name>
+    </author>
+    <author>
+      <name>Yann LeCun</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1010.3467v1</id>
+    <title>Fast Inference in Sparse Coding Algorithms with Applications to Object Recognition</title>
+    <updated>2010-10-18T02:31:21Z</updated>
+    <link href="https://arxiv.org/abs/1010.3467v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1010.3467v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Adaptive sparse coding methods learn a possibly overcomplete set of basis functions, such that natural image patches can be reconstructed by linearly combining a small subset of these bases. The applicability of these methods to visual object recognition tasks has been limited because of the prohibitive cost of the optimization algorithms required to compute the sparse representation. In this work we propose a simple and efficient algorithm to learn basis functions. After training, this model also provides a fast and smooth approximator to the optimal representation, achieving even better accuracy than exact sparse coding algorithms on visual object recognition tasks.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2010-10-18T02:31:21Z</published>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Koray Kavukcuoglu</name>
+    </author>
+    <author>
+      <name>Marc'Aurelio Ranzato</name>
+    </author>
+    <author>
+      <name>Yann LeCun</name>
+    </author>
+  </entry>
+</feed>

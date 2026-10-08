@@ -114,4 +114,6 @@ const Map<String, List<String>> trMain = {
   'Saved proofs…': ['Prove salvate…', 'Pruebas guardadas…', 'Gespeicherte Nachweise…'],
   'IMPORT LIST…': ['IMPORTA ELENCO…', 'IMPORTAR LISTA…', 'LISTE IMPORTIEREN…'],
   'Custom report…': ['Report personalizzato…', 'Informe personalizado…', 'Benutzerdefinierter Bericht…'],
+  'Archive (can be imported again)': ['Archivio (reimportabile)', 'Archivo (se puede importar de nuevo)', 'Archiv (wieder importierbar)'],
+  'Import archive…': ['Importa archivio…', 'Importar archivo…', 'Archiv importieren…'],
 };
