@@ -31,6 +31,19 @@ void main() {
     expect(holes, isEmpty);
   });
 
+  test('no key is defined in two translation tables', () {
+    final seen = <String, String>{};
+    final dup = <String>[];
+    for (final f in Directory('lib').listSync().whereType<File>().where((f) => RegExp(r'tr_\w+\.dart$').hasMatch(f.path))) {
+      for (final m in RegExp(r"^  '((?:[^'\\]|\\.)*)':", multiLine: true).allMatches(f.readAsStringSync())) {
+        final k = m.group(1)!;
+        if (seen.containsKey(k)) dup.add('$k (${seen[k]} / ${f.path})');
+        seen[k] = f.path;
+      }
+    }
+    expect(dup, isEmpty);
+  });
+
   test('t() switches language and fills placeholders', () {
     appLang.value = 'en';
     expect(t('Domain'), 'Domain');

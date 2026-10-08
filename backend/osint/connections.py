@@ -12,7 +12,7 @@ PROVIDERS = {
     "youtube": ("youtube_key",), "spotify": ("spotify_client_id", "spotify_client_secret"), "x": ("x_bearer",),
     "companieshouse": ("companieshouse_key",), "greynoise": ("greynoise_key",), "otx": ("otx_key",), "abusech": ("abusech_key",),
     "virustotal": ("virustotal_key",), "shodan": ("shodan_key",), "hunter": ("hunter_key",), "hibp": ("hibp_key",),
-    "securitytrails": ("securitytrails_key",), "abuseipdb": ("abuseipdb_key",), "ai": (),
+    "securitytrails": ("securitytrails_key",), "abuseipdb": ("abuseipdb_key",), "opencorporates": ("opencorporates_key",), "ai": (),
 }
 
 
@@ -92,6 +92,9 @@ async def _test(p: str) -> tuple[bool, str]:
             return verdict(r.status_code)
         if p == "securitytrails":
             r = await c.get("https://api.securitytrails.com/v1/ping", headers={"APIKEY": CFG["securitytrails_key"]})
+            return verdict(r.status_code)
+        if p == "opencorporates":
+            r = await c.get("https://api.opencorporates.com/v0.4/companies/search", params={"q": "test", "per_page": 1, "api_token": CFG["opencorporates_key"]})
             return verdict(r.status_code)
         if p == "abuseipdb":
             r = await c.get("https://api.abuseipdb.com/api/v2/check", params={"ipAddress": "8.8.8.8"}, headers={"Key": CFG["abuseipdb_key"], "Accept": "application/json"})

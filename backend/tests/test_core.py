@@ -218,7 +218,7 @@ def test_delete_investigation_cleans_everything():
         db.add_finding(inv, "c", f)
     db.cache_put("c", "Account", "https://x/1", [f])
     assert db.delete_investigation(a) and not db.delete_investigation(a)
-    assert db.graph(a) == {"nodes": [], "edges": [], "links": [], "notes": [], "hidden": []}
+    assert db.graph(a) == {"nodes": [], "edges": [], "links": [], "notes": [], "hidden": [], "tags": []}
     assert len(db.graph(b)["edges"]) == 1 and db.image("00ff00ff00ff00ff") is not None  # b still uses it
     assert db.cache_get("c", "Account", "https://x/1") is None
     db.delete_investigation(b)

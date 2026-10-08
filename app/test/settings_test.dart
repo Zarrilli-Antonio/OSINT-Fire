@@ -117,4 +117,21 @@ void main() {
     expect(tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'RIASSUNTO')).onPressed, isNotNull);
     expect(find.textContaining('scegli un\'analisi'), findsOneWidget);
   });
+
+  testWidgets('settings: monitoring switch and the new key rows render', (tester) async {
+    await _open(tester, SettingsDialog(backend: Backend(), initial: _settings(), initialCollectors: _collectors, initialStats: const {'size': 1, 'investigations': 0}));
+    final sw = find.widgetWithText(SwitchListTile, 'Monitora le ricerche');
+    await tester.dragUntilVisible(sw, find.byType(ListView).last, const Offset(0, -150));
+    await tester.drag(find.byType(ListView).last, const Offset(0, 250));
+    await tester.pump();
+    expect(tester.widget<SwitchListTile>(sw).value, isTrue); // missing value = on
+    await tester.tap(sw);
+    await tester.pump();
+    expect(find.text('1 modifiche non salvate'), findsOneWidget);
+
+    await tester.tap(find.text('Chiavi API'));
+    await tester.pumpAndSettle();
+    await tester.dragUntilVisible(find.text('OpenCorporates'), find.byType(ListView).last, const Offset(0, -200));
+    expect(find.text('OpenCorporates'), findsOneWidget);
+  });
 }

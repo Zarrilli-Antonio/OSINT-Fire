@@ -30,8 +30,6 @@ const Map<String, List<String>> trDialogs = {
   'VALUE': ['VALORE', 'VALOR', 'WERT'],
   'name, address, description…': ['nome, indirizzo, descrizione…', 'nombre, dirección, descripción…', 'Name, Adresse, Beschreibung…'],
   'A hand-made node is marked by a golden diamond. You can link, annotate, hide, edit or delete it.': ['Un nodo creato a mano si riconosce dal rombo dorato. Puoi collegarlo, annotarlo, nasconderlo, modificarlo o eliminarlo.', 'Un nodo creado a mano se reconoce por el rombo dorado. Puedes enlazarlo, anotarlo, ocultarlo, editarlo o eliminarlo.', 'Ein von Hand erstellter Knoten ist an der goldenen Raute erkennbar. Du kannst ihn verknüpfen, kommentieren, ausblenden, bearbeiten oder löschen.'],
-  'Cancel': ['Annulla', 'Cancelar', 'Abbrechen'],
-  'SAVE': ['SALVA', 'GUARDAR', 'SPEICHERN'],
   'CREATE': ['CREA', 'CREAR', 'ERSTELLEN'],
   'New bridge': ['Nuovo ponte', 'Nuevo puente', 'Neue Brücke'],
   'RELATION': ['RELAZIONE', 'RELACIÓN', 'BEZIEHUNG'],

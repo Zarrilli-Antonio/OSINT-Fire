@@ -36,6 +36,8 @@ SPEC = {
     "maigret_timeout": (8, "int", (2, 60)),
     # display
     "group_min": (6, "int", (3, 50)),
+    # monitoring: re-run investigations on a schedule while the app is open
+    "monitoring": (True, "bool", None),
     # optional API keys (secret)
     "github_token": ("", "secret", None),
     "virustotal_key": ("", "secret", None),
@@ -56,6 +58,7 @@ SPEC = {
     "companieshouse_key": ("", "secret", None),
     "greynoise_key": ("", "secret", None),
     "otx_key": ("", "secret", None),
+    "opencorporates_key": ("", "secret", None),
     "abusech_key": ("", "secret", None),
     # AI connector
     "ai_provider": ("anthropic", "choice", ("anthropic", "openai")),

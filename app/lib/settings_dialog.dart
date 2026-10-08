@@ -173,7 +173,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
         contentPadding: EdgeInsets.zero,
         title: Text(title, style: const TextStyle(fontSize: 12.5)),
         subtitle: Text(help, style: const TextStyle(fontSize: 11, color: dim)),
-        value: v(key) as bool,
+        value: v(key) != false, // a missing value counts as on (new settings default to on)
         onChanged: (x) => set(key, x),
       );
 
@@ -304,6 +304,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
         _switch('fetch_avatars', t('Download profile images'), t('Used to compare photos across profiles. When off, no images are downloaded or saved.')),
         _num('cache_ttl_hours', t('Cache validity'), t('For how many hours to reuse a result already obtained (0 = always repeat the requests).'), suffix: t('hours')),
         _lines('ignored_domains', t('Domains not to track'), t('Public mail providers and the like (gmail.com, outlook.com…): their addresses are searched, but the domain is not analysed. A domain chosen as seed is always searched.')),
+        _switch('monitoring', t('Monitor investigations'), t('Re-runs investigations on the schedule you set for each one and raises an alert when something new appears. Only while the app is open.')),
         _num('group_min', t('Group nodes from'), t('Minimum number of similar nodes the graph merges into one group.')),
         _section(t('Network')),
         _num('concurrency', t('Parallel requests'), t('Higher is faster but makes it easier for sites to block you.')),
@@ -440,6 +441,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
         _provider('greynoise', 'GreyNoise (community)', t('Tells whether an IP does mass scanning or is a known, benign service.'), [('greynoise_key', t('key'))]),
         _provider('otx', 'AlienVault OTX', t('Historical passive DNS of domains and IPs (free account).'), [('otx_key', t('key'))]),
         _provider('abusech', 'abuse.ch (URLhaus)', t('Malicious URLs linked to a domain or IP (free account).'), [('abusech_key', t('key'))]),
+        _provider('opencorporates', 'OpenCorporates', t('Companies and officers from company registers worldwide (optional key: raises the limits).'), [('opencorporates_key', t('key'))]),
         _provider('companieshouse', 'Companies House (UK)', t('Companies and directors from the UK business register (free key).'), [('companieshouse_key', t('key'))]),
       ]);
 

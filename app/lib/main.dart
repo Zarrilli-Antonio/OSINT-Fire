@@ -6,16 +6,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'ai_dialog.dart';
+import 'alerts.dart';
 import 'api.dart';
+import 'api_ops.dart';
+import 'api_views.dart';
 import 'backend.dart';
+import 'diff.dart';
+import 'filters.dart';
+import 'import_dialog.dart';
 import 'l10n.dart';
 import 'graph_view.dart';
 import 'manual_dialogs.dart';
+import 'monitor_control.dart';
 import 'note_editor.dart';
 import 'pivot_links.dart';
 import 'platform.dart';
+import 'proofs_dialog.dart';
+import 'report_dialog.dart';
 import 'settings_dialog.dart';
+import 'tags.dart';
 import 'theme.dart';
+import 'timeline_view.dart';
 
 final homeKey = GlobalKey<State<Home>>();
 
@@ -165,14 +176,24 @@ class _HomeState extends State<Home> {
   GNode? linkFrom;
   int _hiddenVer = 0;
   final _memo = <bool, (String, Graph)>{};
+  GraphFilters filters = const GraphFilters();
+  GraphDiff? diff; // what the last run brought
+  bool diffOnlyNew = false, diffDismissed = false;
+  int _tagsVer = 0;
+  int monitorDays = 0;
+  bool timelineOpen = false;
+  List<TimelineEvent> timelineEvents = const [];
+  int timelineUndated = 0;
 
   /// The graph as displayed: raw data, with or without the hidden nodes, optionally with leaf groups collapsed. Memoised so
   /// GraphView sees a stable object between rebuilds.
   Graph _view(bool withHidden) {
-    final key = '${identityHashCode(_raw)}|$groupNodes|$groupMin|$_hiddenVer';
+    final key = '${identityHashCode(_raw)}|$groupNodes|$groupMin|$_hiddenVer|${filters.hashCode}|$diffOnlyNew|${diff?.nodes.length}|$_tagsVer';
     final m = _memo[withHidden];
     if (m != null && m.$1 == key) return m.$2;
-    final g = withHidden ? _raw : withoutHidden(_raw);
+    var g = withHidden ? _raw : withoutHidden(_raw);
+    final f = filters.copyWith(onlyNew: diffOnlyNew && diff != null);
+    if (f.isActive) g = applyFilters(g, f, newNodes: diff?.nodes ?? const {}, tags: _raw.tags);
     final out = groupNodes ? collapseGroups(g, min: groupMin, keep: {for (final n in g.nodes) if (n.manual) n.id}) : g;
     _memo[withHidden] = (key, out);
     return out;
@@ -280,12 +301,74 @@ class _HomeState extends State<Home> {
           newIds = since == null ? null : {for (final n in g.nodes) if (n.added >= since) n.id};
           if (newIds != null && newIds!.isEmpty) newIds = null;
         });
+        _loadDiff(id);
       }
     } catch (e) {
       if (mounted) setState(() => log.insert(0, t('Error: {0} (is the backend running on {1}?)', [e, baseUrl])));
     } finally {
       if (mounted) setState(() => running = false);
     }
+  }
+
+  /// What the last run brought, for the banner and the "new" marks. A first run (everything new) is not worth flagging.
+  Future<void> _loadDiff(int id) async {
+    try {
+      final d = await fetchDiff(id);
+      if (!mounted || inv != id) return;
+      setState(() {
+        diff = d;
+        diffOnlyNew = false;
+        diffDismissed = false;
+        if (!d.firstRun && d.nodes.isNotEmpty) newIds = d.nodes;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _loadMonitor(int id) async {
+    try {
+      final m = await fetchMonitorDays(id);
+      if (mounted && inv == id) setState(() => monitorDays = m.days);
+    } catch (_) {}
+  }
+
+  Future<void> _openTimeline() async {
+    if (inv == null) return;
+    try {
+      final (ev, undated) = await fetchTimeline(inv!);
+      if (mounted) setState(() => (timelineEvents = ev, timelineUndated = undated, timelineOpen = true));
+    } catch (e) {
+      if (mounted) setState(() => log.insert(0, t('Error: {0}', [e.toString().replaceFirst('Exception: ', '')])));
+    }
+  }
+
+  Future<void> _importSeeds() async {
+    final r = await showDialog<List<(String, String)>>(context: context, builder: (_) => const ImportSeedsDialog());
+    if (r == null || !mounted) return;
+    setState(() {
+      for (final s in r) {
+        if (!seeds.contains(s)) seeds.add(s);
+      }
+    });
+  }
+
+  Future<void> _setTags(GNode n, List<String> tags) async {
+    if (inv == null) return;
+    setState(() {
+      tags.isEmpty ? _raw.tags.remove(n.id) : _raw.tags[n.id] = tags;
+      _tagsVer++;
+    });
+    try {
+      await setTags(inv!, n.id, tags);
+    } catch (e) {
+      if (mounted) setState(() => log.insert(0, t('Error: {0}', [e.toString().replaceFirst('Exception: ', '')])));
+    }
+  }
+
+  Future<void> _saveProof(String url, int entity) async {
+    if (inv == null) return;
+    final id = inv!;
+    final ok = await showDialog<bool>(context: context, builder: (_) => SaveProofDialog(url: url, entity: entity, save: (a) => saveProof(id, url, entity: entity, archive: a)));
+    if (ok != null && mounted) setState(() => log.insert(0, t('Proof saved: {0}', [url])));
   }
 
   /// Reset everything for a fresh investigation (the previous one stays saved in the history).
@@ -313,6 +396,11 @@ class _HomeState extends State<Home> {
       sinceTs = null;
       updatedAt = null;
       runCount = null;
+      diff = null;
+      diffOnlyNew = false;
+      filters = const GraphFilters();
+      timelineOpen = false;
+      monitorDays = 0;
     });
   }
 
@@ -575,7 +663,13 @@ class _HomeState extends State<Home> {
       updatedAt = d.updated;
       runCount = d.runs;
       log.insert(0, t('Loaded «{0}» (#{1})', [d.name, id]));
+      diff = null;
+      diffOnlyNew = false;
+      filters = const GraphFilters();
+      timelineOpen = false;
     });
+    _loadDiff(id);
+    _loadMonitor(id);
   }
 
   /// Re-run the open investigation as it is defined in the form (seeds, depth), ignoring cached results.
@@ -610,6 +704,15 @@ class _HomeState extends State<Home> {
 
   Future<void> _export(String fmt) async {
     if (inv == null) return;
+    if (fmt == 'report') {
+      final path = await showDialog<String>(context: context, builder: (_) => ReportDialog(inv: inv!, defaultTitle: name.text.trim(), hasHidden: _raw.hidden.isNotEmpty));
+      if (path != null && mounted) setState(() => log.insert(0, t('Exported: {0}', [path])));
+      return;
+    }
+    if (fmt == 'proofs') {
+      await showDialog<void>(context: context, builder: (_) => ProofsDialog(inv: inv!));
+      return;
+    }
     final dl = downloadsDir();
     try {
       String done;
@@ -679,7 +782,36 @@ class _HomeState extends State<Home> {
                     Expanded(child: _pane(graphKey2, _view(false), sel, hl, saves: false, title: t('WITHOUT HIDDEN'))),
                   ],
                 ]),
-                if (graph.nodes.isNotEmpty) Positioned(left: 16, top: 16, width: 280, child: _searchBox(hl)),
+                if (graph.nodes.isNotEmpty || filters.isActive) Positioned(left: 16, top: 16, width: 280, child: _searchBox(hl)),
+                if (inv != null && !linkMode)
+                  Positioned(
+                    left: 304,
+                    top: 16,
+                    child: Row(children: [
+                      FilterButton(graph: _raw, filters: filters, tags: allTags(_raw).toList(), onChanged: (f) => setState(() => filters = f)),
+                      IconButton(tooltip: t('Timeline'), icon: const Icon(Icons.timeline, size: 18), onPressed: _openTimeline),
+                    ]),
+                  ),
+                if (diff != null && !diffDismissed && !diff!.firstRun && !diff!.isEmpty && !linkMode)
+                  Positioned(
+                    bottom: _raw.hidden.isNotEmpty ? 64 : 16,
+                    left: 0,
+                    right: 0,
+                    child: Center(child: DiffBanner(diff: diff!, onlyNew: diffOnlyNew, onToggle: () => setState(() => diffOnlyNew = !diffOnlyNew), onDismiss: () => setState(() => (diffDismissed = true, diffOnlyNew = false)))),
+                  ),
+                if (timelineOpen)
+                  Positioned.fill(
+                    child: TimelineView(
+                      events: timelineEvents,
+                      undated: timelineUndated,
+                      onClose: () => setState(() => timelineOpen = false),
+                      onSelect: (id) {
+                        final n = _raw.nodes.where((x) => x.id == id).firstOrNull;
+                        setState(() => timelineOpen = false);
+                        if (n != null) _select(n);
+                      },
+                    ),
+                  ),
                 if (graph.nodes.isEmpty)
                   Center(
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -835,6 +967,7 @@ class _HomeState extends State<Home> {
         _history(),
         _exportMenu(),
         IconButton(tooltip: t('AI analysis'), icon: const Icon(Icons.auto_awesome, size: 18), onPressed: inv == null ? null : _openAi),
+        AlertsButton(enabled: backendReady, onOpen: (i) => _open(i)),
         IconButton(tooltip: t('Settings'), icon: const Icon(Icons.tune, size: 18), onPressed: _openSettings),
       ]);
 
@@ -848,6 +981,9 @@ class _HomeState extends State<Home> {
           const PopupMenuItem(value: 'md', child: Text('Markdown')),
           PopupMenuItem(value: 'obsidian', child: Text(t('Obsidian folder'))),
           const PopupMenuItem(value: 'graphml', child: Text('GraphML')),
+          const PopupMenuDivider(),
+          PopupMenuItem(value: 'report', child: Text(t('Custom report…'))),
+          PopupMenuItem(value: 'proofs', child: Text(t('Saved proofs…'))),
         ],
       );
 
@@ -926,6 +1062,7 @@ class _HomeState extends State<Home> {
             Image.asset('assets/icon.png', width: 30, height: 30),
             const SizedBox(width: 10),
             const Expanded(child: Text('OSINT/FIRE', style: TextStyle(fontSize: 14, letterSpacing: 3, fontWeight: FontWeight.w700))),
+            AlertsButton(enabled: backendReady, onOpen: (i) => _open(i)),
             IconButton(tooltip: t('Collapse panel (⌘/Ctrl+B)'), icon: const Icon(Icons.chevron_left), onPressed: () => setState(() => sidebarOpen = false)),
           ]),
           const SizedBox(height: 6),
@@ -939,7 +1076,8 @@ class _HomeState extends State<Home> {
           _label(t('Search')),
           TextField(controller: name, decoration: InputDecoration(hintText: t('name'))),
           TextField(controller: purpose, decoration: InputDecoration(hintText: t('purpose (optional)'))),
-          _label(t('Seed')),
+          if (inv != null) Padding(padding: const EdgeInsets.only(top: 8), child: MonitorSelector(key: ValueKey('mon-$inv-$monitorDays'), inv: inv!, initialDays: monitorDays, onChanged: (d) => monitorDays = d)),
+          Row(children: [Expanded(child: _label(t('Seed'))), Padding(padding: const EdgeInsets.only(top: 14), child: InkWell(onTap: _importSeeds, child: Text(t('IMPORT LIST…'), style: const TextStyle(fontSize: 10, letterSpacing: 1, color: accent))))]),
           Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
             SizedBox(
               width: 112,
@@ -1200,6 +1338,7 @@ class _HomeState extends State<Home> {
       chip(isHidden ? Icons.visibility_outlined : Icons.visibility_off_outlined, isHidden ? t('SHOW') : t('HIDE'), () => _setHidden(ids, !isHidden)),
       if (n.id > 0 && n.members.isEmpty) chip(Icons.share_outlined, t('LINK TO…'), () => _startLink(n)),
       if (n.manual) chip(Icons.edit_outlined, t('EDIT'), () => _editNode(n)),
+      if (n.id > 0 && n.members.isEmpty) chip(Icons.fact_check_outlined, t('PROOFS'), () => showDialog<void>(context: context, builder: (_) => ProofsDialog(inv: inv!, entity: n.id))),
       chip(Icons.delete_outline, t('DELETE'), () => _deleteNode(n), color: accent),
     ]);
   }
@@ -1241,6 +1380,10 @@ class _HomeState extends State<Home> {
               ),
             ]),
           ],
+          if (n.id > 0 && n.members.isEmpty) ...[
+            const SizedBox(height: 8),
+            TagEditor(key: ValueKey('tags-$inv-${n.id}'), tags: graph.tags[n.id] ?? const [], suggestions: allTags(_raw), onChanged: (v) => _setTags(n, v)),
+          ],
           if (expandTarget(n) case final tg?) ...[
             const SizedBox(height: 12),
             _expandButton(tg),
@@ -1273,6 +1416,8 @@ class _HomeState extends State<Home> {
                             '${e.reasonLabel} · ${e.collector} · ${(e.conf * 100).round()}%${e.url.isEmpty ? '' : '\n${e.url}'}',
                             style: const TextStyle(fontSize: 10, color: dim, height: 1.4),
                           ),
+                          if (e.url.startsWith('http'))
+                            InkWell(onTap: () => _saveProof(e.url, n.id), child: Padding(padding: const EdgeInsets.only(top: 2), child: Text(t('SAVE PROOF'), style: const TextStyle(fontSize: 9.5, letterSpacing: 1, color: accent)))),
                         ]),
                       ),
                   ]),

@@ -1,5 +1,6 @@
 import asyncio
 import time
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response, StreamingResponse
@@ -7,13 +8,21 @@ from pydantic import BaseModel, Field
 
 from . import collectors
 from .db import DB
-from . import ai, connections, i18n, reports, settings
+from . import ai, connections, features, i18n, monitor, proofs, reports, settings
 from .db import without_hidden
 from .export import to_graphml
 from .paths import db_path
 from .runner import investigate
 
-app = FastAPI(title="OSINT-Fire")
+@asynccontextmanager
+async def lifespan(_app):
+    # the monitoring scheduler only lives while the server runs (test clients that skip lifespan never start it)
+    sched = asyncio.create_task(monitor.loop(lambda: db, start_refresh))
+    yield
+    sched.cancel()
+
+
+app = FastAPI(title="OSINT-Fire", lifespan=lifespan)
 db = DB(db_path())
 settings.load(db)
 tasks: dict[int, asyncio.Task] = {}
@@ -211,6 +220,45 @@ def export(inv: int, format: str = "json", include_hidden: bool = False):
     raise HTTPException(422, "format: json|graphml|md|pdf|obsidian")
 
 
+class ReportBody(BaseModel):
+    format: str = "html"
+    sections: list[str] = ["summary", "entities", "relations", "links", "notes", "tags", "proofs", "timeline"]
+    title: str = Field("", max_length=200)
+    header: str = Field("", max_length=2000)
+    footer: str = Field("", max_length=2000)
+    logo: str | None = None
+    include_hidden: bool = False
+    lang: str | None = None
+
+
+@app.post("/investigations/{inv}/report")
+def custom_report(inv: int, body: ReportBody):
+    meta = db.get_investigation(inv)
+    if not meta:
+        raise HTTPException(404)
+    if body.lang and body.lang not in i18n.LANGS:
+        raise HTTPException(422, "lang: it|en|es|de")
+    g = db.graph(inv)
+    if not body.include_hidden:
+        g = without_hidden(g)
+    extras = {}
+    try:  # optional modules written separately: report still works without them
+        from . import features, proofs
+        if "proofs" in body.sections:
+            extras["proofs"] = proofs.list_for_report(db, inv)
+        if "timeline" in body.sections:
+            extras["timeline"] = features.timeline(db, inv, body.lang or settings.lang())["events"]
+    except (ImportError, AttributeError, TypeError, KeyError):
+        pass
+    try:
+        data = reports.render(g, meta, body.format, sections=body.sections, title=body.title, header=body.header,
+                              footer=body.footer, logo=body.logo, lang=body.lang, extras=extras)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    mt = {"html": "text/html; charset=utf-8", "md": "text/markdown; charset=utf-8", "pdf": "application/pdf"}[body.format]
+    return Response(data, media_type=mt, headers={"Content-Disposition": f'attachment; filename="report-{inv}.{body.format}"'})
+
+
 class Expand(BaseModel):
     seeds: list[Seed] = Field(min_length=1)
     max_depth: int = Field(1, ge=0, le=4)
@@ -276,10 +324,9 @@ class Refresh(BaseModel):
     max_entities: int | None = Field(None, ge=1, le=2000)
 
 
-@app.post("/investigations/{inv}/refresh")
-async def refresh(inv: int, body: Refresh | None = None):
+def start_refresh(inv: int, body: Refresh | None = None) -> asyncio.Task:
     """Re-run the search as it was last defined (base seeds + the entities you expanded by hand), ignoring cached results,
-    and add whatever is new. Body can change name, purpose, seeds, depth first."""
+    and add whatever is new. Body can change name, purpose, seeds, depth first. Returns the running task; HTTPException if it cannot start."""
     if not db.get_investigation(inv):
         raise HTTPException(404)
     if (t := tasks.get(inv)) and not t.done():
@@ -295,11 +342,21 @@ async def refresh(inv: int, body: Refresh | None = None):
     seeds, depths, max_depth = db.refresh_plan(inv)
     d = db.investigation_detail(inv)
     db.log_run(inv, "refresh", [{"type": t, "value": v} for t, v in seeds], max_depth)
-    started = time.time()
     events[inv] = []
     tasks[inv] = asyncio.create_task(investigate(db, inv, seeds, max_depth, db.count_entities(inv) + d["max_entities"], events[inv].append,
                                                  fresh=True, seed_depths=depths))
+    return tasks[inv]
+
+
+@app.post("/investigations/{inv}/refresh")
+async def refresh(inv: int, body: Refresh | None = None):
+    started = time.time()
+    start_refresh(inv, body)
     return {"id": inv, "started": started}
+
+
+monitor.register(app, lambda: db, start_refresh)  # late-bound: tests replace main.db
+proofs.register(app, lambda: db)
 
 
 class NewEntity(BaseModel):
@@ -461,3 +518,6 @@ async def stream(inv: int):
             await asyncio.sleep(0.3)
 
     return StreamingResponse(gen(), media_type="text/event-stream")
+
+
+features.register(app, lambda: db)  # tags, seed parsing, diff, timeline

@@ -27,6 +27,12 @@ create table if not exists run_log(id integer primary key, inv integer, ts real,
 create table if not exists layout(inv integer, entity integer, x real, y real, pinned integer not null default 0, primary key(inv, entity));
 create table if not exists hidden(inv integer, entity integer, auto integer not null default 0, primary key(inv, entity));
 create table if not exists deleted(inv integer, type text, value text, primary key(inv, type, value));
+create table if not exists tag(inv integer, entity integer, name text not null, primary key(inv, entity, name));
+create table if not exists alert(id integer primary key, inv integer, ts real, entities integer not null default 0, relations integer not null default 0,
+                                 summary text not null default '[]', seen integer not null default 0);
+create table if not exists proof(id integer primary key, inv integer, entity integer, url text not null, ts real, sha256 text not null default '', size integer not null default 0,
+                                 content_type text not null default '', status integer not null default 0, wayback text not null default '', truncated integer not null default 0,
+                                 body blob);
 """
 
 # columns added after the first release: (table, column, ddl). Applied to fresh and old databases alike.
@@ -40,6 +46,8 @@ MIGRATIONS = [
     ("entity", "manual", "integer not null default 0"),  # created by the user, not by a collector
     ("relation", "manual", "integer not null default 0"),
     ("hidden", "auto", "integer not null default 0"),  # 1 = hidden only because the node it hung from was hidden or deleted
+    ("investigation", "monitor_days", "integer not null default 0"),  # re-run the search every N days while the app is open (0 = off)
+    ("investigation", "monitor_checked", "real not null default 0"),
 ]
 
 
@@ -119,7 +127,11 @@ class DB:
             "select r.id, r.src, r.dst, r.rel, r.conf, r.reason, r.manual, e.collector, e.url "
             "from relation r join evidence e on e.id = r.evidence where r.inv=?", (inv,))]
         hidden = [r[0] for r in self.c.execute("select entity from hidden where inv=?", (inv,))]
-        return {"nodes": nodes, "edges": edges, "links": self.links(inv), "notes": self.notes(inv), "hidden": hidden}
+        tags: dict[int, list[str]] = defaultdict(list)
+        for r in self.c.execute("select entity, name from tag where inv=? order by rowid", (inv,)):
+            tags[r["entity"]].append(r["name"])
+        return {"nodes": nodes, "edges": edges, "links": self.links(inv), "notes": self.notes(inv), "hidden": hidden,
+                "tags": [{"entity": e, "tags": t} for e, t in tags.items()]}
 
     def save_links(self, inv: int, links) -> None:
         """Upsert score/signals; a user decision (confirmed/rejected) survives recomputation."""
@@ -163,7 +175,7 @@ class DB:
             return False
         c = self.c
         c.execute("delete from run where (type, value) in (select type, value from entity where inv=?)", (inv,))
-        for t in ("relation", "link", "evidence", "note", "layout", "hidden", "deleted", "run_log", "entity"):
+        for t in ("relation", "link", "evidence", "note", "layout", "hidden", "deleted", "run_log", "tag", "alert", "proof", "entity"):
             c.execute(f"delete from {t} where inv=?", (inv,))
         c.execute("delete from investigation where id=?", (inv,))
         c.execute("delete from image where hash not in (select value from entity where type='Immagine')")
@@ -219,7 +231,7 @@ class DB:
 
     def wipe(self) -> int:
         n = self.c.execute("select count(*) from investigation").fetchone()[0]
-        for t in ("relation", "link", "evidence", "note", "layout", "hidden", "deleted", "run_log", "entity", "investigation", "run", "image"):
+        for t in ("relation", "link", "evidence", "note", "layout", "hidden", "deleted", "run_log", "tag", "alert", "proof", "entity", "investigation", "run", "image"):
             self.c.execute(f"delete from {t}")
         self.c.commit()
         return n
@@ -236,7 +248,7 @@ class DB:
         self.c.commit()
 
     def investigation_detail(self, inv: int) -> dict | None:
-        r = self.c.execute("select id, name, purpose, created, updated, seeds, max_depth, max_entities, view from investigation where id=?", (inv,)).fetchone()
+        r = self.c.execute("select id, name, purpose, created, updated, seeds, max_depth, max_entities, view, monitor_days, monitor_checked from investigation where id=?", (inv,)).fetchone()
         if not r:
             return None
         runs = [{"ts": x["ts"], "kind": x["kind"], "seeds": json.loads(x["seeds"]), "depth": x["depth"]}
@@ -247,7 +259,8 @@ class DB:
             if seeds:
                 self.update_investigation(inv, seeds=seeds)
         return {"id": r["id"], "name": r["name"], "purpose": r["purpose"], "created": r["created"], "updated": r["updated"] or r["created"],
-                "seeds": seeds, "max_depth": r["max_depth"], "max_entities": r["max_entities"], "runs": runs}
+                "seeds": seeds, "max_depth": r["max_depth"], "max_entities": r["max_entities"], "runs": runs,
+                "monitor_days": r["monitor_days"], "monitor_checked": r["monitor_checked"]}
 
     def _infer_seeds(self, inv: int) -> list[dict]:
         """Searchable entities that nothing else pointed to: those are what the user typed in."""
@@ -395,8 +408,9 @@ class DB:
             self.c.execute("delete from evidence where id in (select evidence from relation where inv=? and (src=? or dst=?))", (inv, eid, eid))
             self.c.execute("delete from relation where inv=? and (src=? or dst=?)", (inv, eid, eid))
             self.c.execute("delete from link where inv=? and (a=? or b=?)", (inv, eid, eid))
-            for t in ("note", "layout", "hidden"):
+            for t in ("note", "layout", "hidden", "tag"):
                 self.c.execute(f"delete from {t} where inv=? and entity=?", (inv, eid))
+            self.c.execute("update proof set entity=null where inv=? and entity=?", (inv, eid))  # the proof stays, it just no longer points at the node
             self.c.execute("delete from entity where id=?", (eid,))
             if not r["manual"]:
                 self.c.execute("insert or ignore into deleted(inv, type, value) values (?, ?, ?)", (inv, r["type"], r["value"]))
@@ -454,4 +468,5 @@ def without_hidden(g: dict) -> dict:
     return {"nodes": [n for n in g["nodes"] if n["id"] not in hid],
             "edges": [e for e in g["edges"] if e["src"] not in hid and e["dst"] not in hid],
             "links": [l for l in g["links"] if l["a"] not in hid and l["b"] not in hid],
-            "notes": [n for n in g.get("notes", []) if n["entity"] not in hid], "hidden": []}
+            "notes": [n for n in g.get("notes", []) if n["entity"] not in hid],
+            "tags": [t for t in g.get("tags", []) if t["entity"] not in hid], "hidden": []}

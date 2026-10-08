@@ -110,4 +110,8 @@ const Map<String, List<String>> trMain = {
   'Remove from favorites': ['Rimuovi dai preferiti', 'Quitar de favoritos', 'Aus Favoriten entfernen'],
   'Add to favorites': ['Aggiungi ai preferiti', 'Añadir a favoritos', 'Zu Favoriten hinzufügen'],
   'Delete this bridge': ['Elimina questo ponte', 'Eliminar este puente', 'Diese Brücke löschen'],
+  'Proof saved: {0}': ['Prova salvata: {0}', 'Prueba guardada: {0}', 'Nachweis gespeichert: {0}'],
+  'Saved proofs…': ['Prove salvate…', 'Pruebas guardadas…', 'Gespeicherte Nachweise…'],
+  'IMPORT LIST…': ['IMPORTA ELENCO…', 'IMPORTAR LISTA…', 'LISTE IMPORTIEREN…'],
+  'Custom report…': ['Report personalizzato…', 'Informe personalizado…', 'Benutzerdefinierter Bericht…'],
 };

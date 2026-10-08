@@ -47,7 +47,8 @@ class GNote {
 }
 
 class Graph {
-  Graph(this.nodes, this.edges, [this.links = const [], Map<int, GNote>? notes, Set<int>? hidden, this.typeLabels = const {}]) : notes = notes ?? {}, hidden = hidden ?? {};
+  Graph(this.nodes, this.edges, [this.links = const [], Map<int, GNote>? notes, Set<int>? hidden, this.typeLabels = const {}, Map<int, List<String>>? tags]) : notes = notes ?? {}, hidden = hidden ?? {}, tags = tags ?? {};
+  final Map<int, List<String>> tags; // entity id -> tags (only tagged entities)
   final Map<String, String> typeLabels; // canonical type -> name in the interface language
   String typeName(String type) => typeLabel(type, typeLabels);
   final List<GNode> nodes;
@@ -129,12 +130,16 @@ Graph collapseGroups(Graph g, {int min = 6, Set<int> keep = const {}}) {
         '${es.length} ${g.typeName(type).toLowerCase()}'));
     edges.add(GEdge(src, id, rel, es.first.conf, es.first.reason, es.first.collector, es.first.url, 0, false, es.first.relLabel, es.first.reasonLabel));
   }
-  return Graph(nodes, edges, g.links, g.notes, g.hidden, g.typeLabels);
+  return Graph(nodes, edges, g.links, g.notes, g.hidden, g.typeLabels, g.tags);
 }
 
 Future<Graph> fetchGraph(int inv) async {
   final r = await http.get(Uri.parse('$baseUrl/investigations/$inv/graph'));
-  final j = jsonDecode(r.body);
+  return graphFromJson(jsonDecode(r.body));
+}
+
+/// The graph payload of GET /investigations/{inv}/graph.
+Graph graphFromJson(Map<String, dynamic> j) {
   return (Graph(
     [for (final n in j['nodes']) GNode(n['id'], n['type'], n['value'], const [], (n['added'] as num).toDouble(), (n['manual'] ?? 0) == 1, const [], n['label'] as String?)],
     [
@@ -149,6 +154,7 @@ Future<Graph> fetchGraph(int inv) async {
     {for (final n in j['notes'] ?? []) n['entity'] as int: GNote(n['text'] as String, n['starred'] as bool)},
     {for (final i in j['hidden'] ?? []) i as int},
     Map<String, String>.from(j['type_labels'] ?? {}),
+    {for (final x in j['tags'] ?? []) x['entity'] as int: [for (final s in x['tags']) s as String]},
   ));
 }
 
@@ -398,7 +404,7 @@ Graph withoutHidden(Graph g) {
   if (g.hidden.isEmpty) return g;
   final h = g.hidden;
   return Graph([for (final n in g.nodes) if (!h.contains(n.id)) n], [for (final e in g.edges) if (!h.contains(e.src) && !h.contains(e.dst)) e],
-      [for (final l in g.links) if (!h.contains(l.a) && !h.contains(l.b)) l], g.notes, <int>{}, g.typeLabels);
+      [for (final l in g.links) if (!h.contains(l.a) && !h.contains(l.b)) l], g.notes, <int>{}, g.typeLabels, g.tags);
 }
 
 // ---------------- nodes and bridges made by the user, hiding ----------------
@@ -448,4 +454,12 @@ Future<(int deleted, List<int> hidden)> deleteEntities(int inv, Iterable<int> id
   if (r.statusCode != 200) throw Exception(_detail(r));
   final j = jsonDecode(r.body);
   return (j['deleted'] as int, [for (final i in j['hidden']) i as int]);
+}
+
+/// Replace the tags of an entity; returns the tags as stored by the server.
+Future<List<String>> setTags(int inv, int entity, List<String> tags) async {
+  final r = await http.put(Uri.parse('$baseUrl/investigations/$inv/entities/$entity/tags'),
+      headers: {'content-type': 'application/json'}, body: jsonEncode({'tags': tags}));
+  if (r.statusCode != 200) throw Exception(_detail(r));
+  return [for (final s in jsonDecode(utf8.decode(r.bodyBytes))['tags']) s as String];
 }

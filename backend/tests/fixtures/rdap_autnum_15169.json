@@ -1,0 +1,43 @@
+{
+ "handle": "AS15169",
+ "name": "GOOGLE",
+ "objectClassName": "autnum",
+ "startAutnum": 15169,
+ "endAutnum": 15169,
+ "entities": [
+  {
+   "handle": "GOGL",
+   "roles": [
+    "registrant"
+   ],
+   "vcardArray": [
+    "vcard",
+    [
+     [
+      "fn",
+      {},
+      "text",
+      "Google LLC"
+     ]
+    ]
+   ]
+  },
+  {
+   "handle": "ZG39-ARIN",
+   "roles": [
+    "technical"
+   ],
+   "vcardArray": [
+    "vcard",
+    [
+     [
+      "fn",
+      {},
+      "text",
+      "Google LLC"
+     ]
+    ]
+   ]
+  }
+ ]
+}

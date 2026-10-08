@@ -29,7 +29,13 @@
   create your own nodes and bridges, and look at the graph clean, complete or both side by side.
 - **Links the evidence.** Same profile picture, same SSH/PGP key, same tracking ID, same phone: scored "same subject" links you confirm or reject.
 - **Remembers how you left it.** Reopen a search and it is as you left it: seed list, node positions, camera, hidden nodes.
-- **Exports.** PDF, Markdown, an Obsidian vault, GraphML.
+- **Filters, tags and timeline.** Filter by confidence, source, notes, favourites, tags; tag nodes (`suspect`, `verified`…); see dated facts
+  (registrations, breaches, your own events, search runs) on a timeline.
+- **Shows what changed.** After every run, a banner says what is new since the last one, and you can look at only that.
+- **Watches for you.** Choose "every N days" on a search: while the app is open it re-runs it and raises an alert when something new appears.
+- **Keeps proofs.** Save a copy of the page behind a finding with its time and SHA-256; optionally ask the Internet Archive for a copy too (it is told the address, so it is off unless you tick it).
+- **Imports lists.** Paste a list or CSV of domains, emails, IPs, phones, handles and review the detected seeds.
+- **Exports.** PDF, Markdown, an Obsidian vault, GraphML, and customisable reports (pick sections, title, header/footer, logo; PDF, Markdown or one standalone HTML file).
 - **Connects to AI.** An analyst panel (summary, review, what to search next) and an MCP server so assistants like Claude Desktop can drive it.
 
 <p align="center">

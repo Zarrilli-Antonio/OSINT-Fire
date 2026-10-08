@@ -182,6 +182,9 @@ REASONS = {
     "indirizzo nel testo della home page": ("address in the home page text", "dirección en el texto de la página de inicio", "Adresse im Text der Startseite"),
     "scansioni di massa osservate": ("mass scanning observed", "escaneos masivos observados", "Massenscans beobachtet"),
     "servizio noto e benigno (RIOT)": ("known benign service (RIOT)", "servicio conocido y benigno (RIOT)", "bekannter harmloser Dienst (RIOT)"),
+    "visto nell'indice Common Crawl {}": ("seen in the Common Crawl index {}", "visto en el índice de Common Crawl {}", "im Common-Crawl-Index {} gesehen"),
+    "registro societario OpenCorporates": ("OpenCorporates company register", "registro mercantil de OpenCorporates", "OpenCorporates-Unternehmensregister"),
+    "indirizzo nel registro OpenCorporates": ("address in the OpenCorporates register", "dirección en el registro de OpenCorporates", "Adresse im OpenCorporates-Register"),
     # reasons written by hand or by the correlation engine
     "aggiunto manualmente": ("added manually", "añadido manualmente", "manuell hinzugefügt"),
 }
@@ -268,6 +271,11 @@ UI = {
     "notes": ("Note", "Notes", "Notas", "Notizen"), "auto": ("automatico", "automatic", "automático", "automatisch"), "review": ("da verificare", "to review", "por verificar", "zu prüfen"),
     "confirmed": ("confermato", "confirmed", "confirmado", "bestätigt"), "type": ("tipo", "type", "tipo", "typ"), "value": ("valore", "value", "valor", "wert"),
     "investigation_key": ("indagine", "investigation", "investigacion", "untersuchung"), "favourite_key": ("preferito", "favourite", "favorito", "favorit"),
+    "tags": ("Tag", "Tags", "Etiquetas", "Tags"), "proofs": ("Prove", "Proofs", "Pruebas", "Belege"), "timeline": ("Cronologia", "Timeline", "Cronología", "Zeitleiste"),
+    "filter": ("Filtra...", "Filter...", "Filtrar...", "Filtern..."), "archive": ("Archivio", "Archive", "Archivo", "Archiv"),
+    "tl_run_create": ("Ricerca avviata", "Search run", "Búsqueda ejecutada", "Suche gestartet"), "tl_run_refresh": ("Aggiornamento", "Refresh", "Actualización", "Aktualisierung"),
+    "tl_run_expand": ("Espansione", "Expansion", "Expansión", "Erweiterung"), "tl_manual": ("Aggiunto a mano: {}", "Added by hand: {}", "Añadido a mano: {}", "Manuell hinzugefügt: {}"),
+    "tl_breach": ("Violazione dati: {}", "Data breach: {}", "Filtración de datos: {}", "Datenleck: {}"),
     "entities_title": ("Entità", "Entities", "Entidades", "Entitäten"), "pt": ("Pt.", "Score", "Punt.", "Wert"), "entity_col": ("Entità", "Entity", "Entidad", "Entität"),
 }
 
