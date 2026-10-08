@@ -18,23 +18,23 @@ PROVIDERS = {
 
 def verdict(status: int, ok_codes=(200,), what: str = "") -> tuple[bool, str]:
     if status in ok_codes:
-        return True, "collegato" + (f": {what}" if what else "")
+        return True, "connected" + (f": {what}" if what else "")
     if status in (401, 403):
-        return False, f"credenziali rifiutate ({status}) o piano senza accesso a questa API"
+        return False, f"credentials rejected ({status}) or plan without access to this API"
     if status == 429:
-        return False, "limite di richieste raggiunto, riprova tra poco"
-    return False, f"risposta inattesa ({status})"
+        return False, "rate limit reached, try again shortly"
+    return False, f"unexpected response ({status})"
 
 
 async def test(provider: str) -> tuple[bool, str]:
     if provider not in PROVIDERS:
         raise KeyError(provider)
     if provider != "ai" and any(not CFG[k] for k in PROVIDERS[provider]):
-        return False, "credenziali non impostate"
+        return False, "credentials not set"
     try:
         return await _test(provider)
     except httpx.HTTPError as e:
-        return False, f"connessione fallita: {e!r}"
+        return False, f"connection failed: {e!r}"
     except Exception as e:  # token flows raise RuntimeError with the provider's message
         return False, str(e)
 
@@ -43,19 +43,19 @@ async def _test(p: str) -> tuple[bool, str]:
     if p == "ai":
         async with httpx.AsyncClient(timeout=60) as c:
             try:
-                await ai.complete(c, "Rispondi solo con la parola ok.", "ping", 8)
+                await ai.complete(c, "Reply with the single word ok.", "ping", 8)
             except ai.AIError as e:
                 return False, str(e)
-        return True, f"collegato: {CFG['ai_provider']} · {CFG['ai_model']}"
+        return True, f"connected: {CFG['ai_provider']} · {CFG['ai_model']}"
     if p == "reddit":
         await reddit_token()
-        return True, "collegato (autenticazione app riuscita)"
+        return True, "connected (app authentication succeeded)"
     if p == "twitch":
         await twitch_token()
-        return True, "collegato (autenticazione app riuscita)"
+        return True, "connected (app authentication succeeded)"
     if p == "spotify":
         await spotify_token()
-        return True, "collegato (autenticazione app riuscita)"
+        return True, "connected (app authentication succeeded)"
     async with client({}) as c:
         if p == "github":
             r = await c.get("https://api.github.com/user", headers={"Authorization": f"Bearer {CFG['github_token']}"})
@@ -96,4 +96,4 @@ async def _test(p: str) -> tuple[bool, str]:
         if p == "abuseipdb":
             r = await c.get("https://api.abuseipdb.com/api/v2/check", params={"ipAddress": "8.8.8.8"}, headers={"Key": CFG["abuseipdb_key"], "Accept": "application/json"})
             return verdict(r.status_code)
-    return False, "provider sconosciuto"
+    return False, "unknown provider"

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'l10n.dart';
+
 /// Multi-line private note with debounced autosave. Pending text is flushed when the editor goes away
 /// (selecting another node), so nothing typed is lost.
 class NoteEditor extends StatefulWidget {
@@ -40,7 +42,7 @@ class _NoteEditorState extends State<NoteEditor> {
         maxLines: 4,
         maxLength: 5000,
         style: const TextStyle(fontSize: 12),
-        decoration: const InputDecoration(hintText: 'nota privata…', counterText: ''),
+        decoration: InputDecoration(hintText: t('private note…'), counterText: ''),
         onChanged: (_) {
           _dirty = true;
           _debounce?.cancel();

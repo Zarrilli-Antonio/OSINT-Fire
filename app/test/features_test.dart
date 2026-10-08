@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:osint_fire/api.dart';
+import 'package:osint_fire/l10n.dart';
 import 'package:osint_fire/graph_view.dart';
 import 'package:osint_fire/main.dart';
 import 'package:osint_fire/manual_dialogs.dart';
@@ -30,6 +31,7 @@ Future<void> _pump(WidgetTester tester, {Set<int>? hidden, Graph? graph}) async 
 }
 
 void main() {
+  setUpAll(() => appLang.value = 'it');
   testWidgets('search counts matches, Enter selects the first, Escape clears', (tester) async {
     await _pump(tester);
     await tester.enterText(_search, 'bob');

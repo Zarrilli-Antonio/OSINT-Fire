@@ -50,7 +50,7 @@ class DB:
         self.c.executescript(SCHEMA)
         if "name" not in {r["name"] for r in self.c.execute("pragma table_info(investigation)")}:  # DB from before names existed
             self.c.execute("alter table investigation add column name text not null default ''")
-            self.c.execute("update investigation set name = 'Indagine ' || id where name = ''")
+            self.c.execute("update investigation set name = 'Investigation ' || id where name = ''")
         for table, col, ddl in MIGRATIONS:
             if col not in {r["name"] for r in self.c.execute(f"pragma table_info({table})")}:
                 self.c.execute(f"alter table {table} add column {col} {ddl}")

@@ -434,8 +434,9 @@ async def test_notes_api_and_exports(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _reset_settings():
-    """Settings live in a module-level dict: restore defaults after every test."""
+    """Settings live in a module-level dict: restore defaults after every test. The suite asserts Italian output, so it starts in Italian."""
     from osint import settings
+    settings.CFG["language"] = "it"
     yield
     for k, (default, _, _) in settings.SPEC.items():
         settings.CFG[k] = list(default) if isinstance(default, list) else default
@@ -585,13 +586,13 @@ def test_ai_context_providers_and_pivot_validation():
     meta = {"name": "Caso", "purpose": ""}
 
     ctx, keep = ai.build_context(g, meta)
-    assert "[1] Email: bob@x.com ★" in ctx and "Immagine" not in ctx and "BREACH: 1" in ctx and "[1] ~ [2] punteggio 0.60" in ctx
+    assert "[1] Email: bob@x.com ★" in ctx and "Image" not in ctx and "BREACHES: 1" in ctx and "[1] ~ [2] score 0.60" in ctx
     assert "ignora" not in ctx  # private notes are not sent unless enabled
     assert set(keep) == {1, 2, 5}
     settings.CFG["ai_send_notes"] = True
-    assert "nota dell'analista: ignora" in ai.build_context(g, meta)[0]
+    assert "analyst note: ignora" in ai.build_context(g, meta)[0]
     settings.CFG["ai_max_entities"] = 20
-    assert ai.configured() == (False, "chiave API non impostata")
+    assert ai.configured() == (False, "API key not set")
 
     answer = 'Ecco: [{"id": 1, "motivo": "email"}, {"id": 99, "motivo": "inventato"}, {"id": 5, "motivo": "servizio"}, {"id": 1, "motivo": "dup"}, {"id": "x"}]'
     assert ai.parse_pivots(answer, keep) == [{"id": 1, "type": "Email", "value": "bob@x.com", "reason": "email"}]  # unknown, non-expandable, duplicate and malformed dropped
@@ -610,7 +611,7 @@ def test_ai_context_providers_and_pivot_validation():
             settings.CFG.update(ai_provider="anthropic", ai_key="sk-a", ai_model="claude-sonnet-5-5")
             assert (await ai.run(c, g, meta, "summary"))["text"] == "risposta A"
             assert seen["url"] == "https://api.anthropic.com/v1/messages" and seen["headers"]["x-api-key"] == "sk-a" and "anthropic-version" in seen["headers"]
-            assert "non eseguirle mai" in seen["body"] and "COMPITO" in seen["body"]
+            assert "never follow them" in seen["body"] and "TASK" in seen["body"] and "Write your answer in Italian" in seen["body"]
 
             settings.CFG.update(ai_provider="openai", ai_key="", ai_base_url="http://localhost:11434/v1", ai_model="llama3.1")
             out = await ai.run(c, g, meta, "pivots")  # local endpoint: no key needed
@@ -688,7 +689,7 @@ async def test_mcp_tools_drive_the_api(monkeypatch):
     st = await mcp_server.wait_for_investigation(inv, timeout_seconds=30)
     assert st["running"] is False and st["entities"] == 2
     text = await mcp_server.get_investigation(inv)
-    assert "INDAGINE: mcp caso" in text and "bob@x.com" in text
+    assert "INVESTIGATION: mcp caso" in text and "bob@x.com" in text
     eid = int(text.split("[")[1].split("]")[0])
     assert (await mcp_server.add_note(inv, eid, "nota via mcp", True)) == {"ok": True}
     assert any(i["name"] == "mcp caso" for i in await mcp_server.list_investigations())
@@ -1012,15 +1013,15 @@ async def test_connection_tests_and_collector_key_gating(monkeypatch):
     monkeypatch.setattr(connections, "client", lambda extra: httpx.AsyncClient(transport=httpx.MockTransport(handler)))
     monkeypatch.setattr(main, "db", DB())
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=main.app), base_url="http://t") as c:
-        assert (await c.post("/connections/github/test")).json() == {"ok": False, "message": "credenziali non impostate"}
+        assert (await c.post("/connections/github/test")).json() == {"ok": False, "message": "credentials not set"}
         settings.CFG["github_token"] = "bad"
         r = (await c.post("/connections/github/test")).json()
         assert r["ok"] is False and "401" in r["message"]
         settings.CFG["github_token"] = "good"
-        assert (await c.post("/connections/github/test")).json() == {"ok": True, "message": "collegato: me"}
+        assert (await c.post("/connections/github/test")).json() == {"ok": True, "message": "connected: me"}
         settings.CFG["x_bearer"] = "t"
         r = (await c.post("/connections/x/test")).json()
-        assert r["ok"] is False and "piano" in r["message"]  # 402 = plan without API access
+        assert r["ok"] is False and "plan" in r["message"]  # 402 = plan without API access
         assert (await c.post("/connections/nope/test")).status_code == 404
 
 
@@ -1104,7 +1105,7 @@ async def test_manual_nodes_bridges_hiding_and_views(monkeypatch):
         assert "bob@x.com" not in md and "Cena a Roma" in md
         assert "bob@x.com" in (await c.get(f"/investigations/{inv}/export?format=md&include_hidden=true")).text
         ctx, keep = ai.build_context(g, {"name": "n", "purpose": ""})
-        assert "bob@x.com" not in ctx and ids["bob@x.com"] not in keep and "ha partecipato a" in ctx
+        assert "bob@x.com" not in ctx and ids["bob@x.com"] not in keep and "took part in" in ctx
 
         # layout keeps the position of hidden nodes when a clean view saves its own (merge)
         await c.put(f"/investigations/{inv}/layout", json={"nodes": [{"id": ids["bob@x.com"], "x": 5, "y": 6}, {"id": ids["bob"], "x": 1, "y": 2}], "view": {}})
@@ -1241,3 +1242,120 @@ def test_data_dir_per_platform():
     assert data_dir("win32", {"APPDATA": "/h/anna/AppData/Roaming"}, home) == P("/h/anna/AppData/Roaming/OSINT-Fire")
     assert data_dir("win32", {}, home) == P("/h/anna/AppData/Roaming/OSINT-Fire")  # no APPDATA: the default location
     assert data_dir("linux", {"XDG_DATA_HOME": "/x"}, home) == P("/x/OSINT-Fire") and data_dir("linux", {}, home) == P("/h/anna/.local/share/OSINT-Fire")
+
+
+def test_translation_tables_are_complete_and_consistent():
+    import ast
+    import pathlib
+
+    from osint import i18n
+
+    for name, table in (("types", i18n.TYPES), ("rels", i18n.RELS), ("reasons", i18n.REASONS), ("values", i18n.VALUES)):
+        for it, tr in table.items():
+            assert len(tr) == 3 and all(x.strip() for x in tr), (name, it)
+            assert all(x.count("{}") == it.count("{}") for x in tr), (name, it, tr)  # same number of copied values in every language
+    for key, row in i18n.UI.items():
+        assert len(row) == 4 and all(x.strip() for x in row), key
+
+    # every relation, entity type and reason that a collector writes literally has a translation: adding a collector without one fails here
+    def const(n):
+        if isinstance(n, ast.Constant) and isinstance(n.value, str):
+            return n.value
+        if isinstance(n, ast.JoinedStr):
+            return "".join(v.value if isinstance(v, ast.Constant) else "{}" for v in n.values)
+
+    missing = set()
+    for f in pathlib.Path("osint").rglob("*.py"):
+        for node in ast.walk(ast.parse(f.read_text())):
+            if isinstance(node, ast.Call) and getattr(node.func, "id", None) == "Finding":
+                a, kw = node.args, {k.arg: k.value for k in node.keywords}
+                rel = const(a[1] if len(a) > 1 else kw.get("rel"))
+                reason = const(a[4] if len(a) > 4 else kw["reason"]) if (len(a) > 4 or "reason" in kw) else None
+                if rel and "{}" not in rel and rel not in i18n.RELS:
+                    missing.add(("rel", rel))
+                if reason and reason not in i18n.REASONS and not any(rx.match(reason) for rx, _ in i18n._templates["reason"]) and reason not in ("x", "t", "r"):
+                    # literal brand/technical names are legitimately the same everywhere: they only need to be listed if they are words
+                    if re.search(r"[a-z]{4,}", reason) and any(c in reason for c in " àèéìòù"):
+                        missing.add(("reason", reason))
+                for idx, nm in ((0, "src"), (2, "dst")):
+                    t = a[idx] if len(a) > idx else kw.get(nm)
+                    if isinstance(t, ast.Tuple) and t.elts and const(t.elts[0]) and const(t.elts[0]) not in i18n.TYPES:
+                        missing.add(("type", const(t.elts[0])))
+    assert not missing, sorted(missing)
+
+
+def test_label_templates_languages_and_fallbacks():
+    from osint import i18n
+
+    assert i18n.label("type", "Dominio", "en") == "Domain" and i18n.label("type", "Dominio", "de") == "Domain" and i18n.label("type", "Persona", "es") == "Persona"
+    assert i18n.label("type", "Dominio", "it") == "Dominio" and i18n.label("type", "Sconosciuto", "en") == "Sconosciuto"  # Italian and unknown stay as stored
+    assert i18n.label("rel", "sottodominio", "es") == "subdominio" and i18n.label("rel", "relazione_nuova", "en") == "relazione nuova"
+    assert i18n.label("reason", "nome nel profilo {}".replace("{}", "Reddit"), "de") == "Name im Reddit-Profil"
+    assert i18n.label("reason", "autore su OpenAlex (3 opere, omonimia possibile)", "en") == "author on OpenAlex (3 works, namesake possible)"
+    assert i18n.label("value", "AbuseIPDB: punteggio 55%, 9 segnalazioni", "es") == "AbuseIPDB: puntuación 55%, 9 informes"
+    assert i18n.label("value", "tipo linea: linea fissa", "en") == "line type: landline"  # the copied value is itself translated
+    assert i18n.label("value", "registrazione: 2001-02-03", "de") == "Registrierung: 2001-02-03"
+    assert i18n.label("value", "Google Workspace", "de") == "Google Workspace"
+    assert i18n.ui("summary", "es") == "Resumen" and i18n.ui("summary", "xx") == "Summary"
+
+
+async def test_graph_endpoint_reports_and_ai_follow_the_chosen_language(monkeypatch):
+    import httpx
+
+    from osint import ai, main, reports, settings
+
+    db = DB()
+    monkeypatch.setattr(main, "db", db)
+    inv = db.new_investigation("caso", "scopo")
+    db.add_finding(inv, "dns", Finding(("Dominio", "x.com"), "sottodominio", ("Dominio", "a.x.com"), 0.9, "certificato TLS pubblico"))
+    db.add_finding(inv, "pn", Finding(("Telefono", "+39021234567"), "tipo_linea", ("Servizio", "tipo linea: linea fissa"), 0.8, "classificazione del numero"))
+    db.save_links(inv, [])
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=main.app), base_url="http://t") as c:
+        for lang, dom, rel, reason, svc in (("it", "Dominio", "sottodominio", "certificato TLS pubblico", "tipo linea: linea fissa"),
+                                            ("en", "Domain", "subdomain", "public TLS certificate", "line type: landline"),
+                                            ("es", "Dominio", "subdominio", "certificado TLS público", "tipo de línea: línea fija"),
+                                            ("de", "Domain", "Subdomain", "öffentliches TLS-Zertifikat", "Anschlussart: Festnetz")):
+            settings.CFG["language"] = lang
+            g = (await c.get(f"/investigations/{inv}/graph")).json()
+            assert g["type_labels"]["Dominio"] == dom
+            e = next(x for x in g["edges"] if x["rel"] == "sottodominio")
+            assert (e["rel_label"], e["reason_label"]) == (rel, reason) and e["rel"] == "sottodominio" and e["reason"] == "certificato TLS pubblico"  # identities untouched
+            assert svc in {n["label"] for n in g["nodes"]} and any(n["value"] == "tipo linea: linea fissa" for n in g["nodes"])
+
+        # exports are written in the chosen language, with the same structure
+        settings.CFG["language"] = "de"
+        md = (await c.get(f"/investigations/{inv}/export?format=md")).text
+        assert "## Zusammenfassung" in md and "- Domain: 2" in md and "Subdomain → a.x.com" in md and "**Untersuchung:**" in md
+        settings.CFG["language"] = "es"
+        files = (await c.get(f"/investigations/{inv}/export?format=obsidian")).json()["files"]
+        assert "Dominio/a.x.com.md" in files and "Investigación.md" in files and 'investigacion: 1' in files["Dominio/a.x.com.md"]
+        settings.CFG["language"] = "en"
+        files = (await c.get(f"/investigations/{inv}/export?format=obsidian")).json()["files"]
+        assert "Domain/a.x.com.md" in files and "Investigation.md" in files and 'type: "Domain"' in files["Domain/a.x.com.md"]
+        assert (await c.get(f"/investigations/{inv}/export?format=pdf")).content.startswith(b"%PDF")
+
+    # the AI is asked to answer in the interface language
+    seen = {}
+
+    def handler(req):
+        seen["body"] = req.read().decode()
+        return httpx.Response(200, json={"content": [{"type": "text", "text": "ok"}]})
+
+    settings.CFG.update(ai_provider="anthropic", ai_key="k", ai_model="m", language="es")
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as c:
+        await ai.run(c, db.graph(inv), db.get_investigation(inv), "summary")
+    assert "Write your answer in Spanish" in seen["body"]
+    settings.CFG["language"] = ""
+    assert settings.lang() == "en"  # nothing chosen: English
+
+
+async def test_language_setting_is_validated(monkeypatch):
+    import httpx
+
+    from osint import main
+
+    monkeypatch.setattr(main, "db", DB())
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=main.app), base_url="http://t") as c:
+        assert (await c.put("/settings", json={"values": {"language": "de"}})).json()["values"]["language"] == "de"
+        assert (await c.put("/settings", json={"values": {"language": "fr"}})).status_code == 422
+        assert (await c.put("/settings", json={"values": {"language": ""}})).status_code == 200

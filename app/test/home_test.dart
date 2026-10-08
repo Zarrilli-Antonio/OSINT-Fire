@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:osint_fire/main.dart';
+import 'package:osint_fire/l10n.dart';
 import 'package:osint_fire/theme.dart';
 
 void main() {
+  setUpAll(() => appLang.value = 'it');
   testWidgets('home renders with theme, no layout errors, seed chips work', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'api.dart';
+import 'l10n.dart';
 import 'theme.dart';
 
 /// Ask the configured AI about the current investigation. Pops an [AiPivot] when the user wants to expand a
@@ -24,12 +25,12 @@ class _AiDialogState extends State<AiDialog> {
   bool busy = false;
   final question = TextEditingController();
 
-  static const tasks = [
-    ('summary', 'Riassunto', 'Cosa emerge, identità probabili, lacune'),
-    ('review', 'Verifica', 'Incongruenze e probabili falsi positivi'),
-    ('pivots', 'Cosa cercare ora', 'Dati da cui estendere la ricerca'),
-    ('report', 'Bozza di rapporto', 'Rapporto in Markdown'),
-  ];
+  static List<(String, String, String)> get tasks => [
+        ('summary', t('Summary'), t('What emerges, likely identities, gaps')),
+        ('review', t('Review'), t('Inconsistencies and likely false positives')),
+        ('pivots', t('What to look for now'), t('Data to extend the search from')),
+        ('report', t('Draft report'), t('Report in Markdown')),
+      ];
 
   @override
   void initState() {
@@ -44,7 +45,7 @@ class _AiDialogState extends State<AiDialog> {
     fetchAiStatus().then((s) {
       if (mounted) setState(() => status = s);
     }).catchError((Object e) {
-      if (mounted) setState(() => error = 'Backend non raggiungibile: $e');
+      if (mounted) setState(() => error = t('Backend unreachable: {0}', [e]));
     });
   }
 
@@ -92,7 +93,7 @@ class _AiDialogState extends State<AiDialog> {
             Row(children: [
               const Icon(Icons.auto_awesome, size: 16, color: accent),
               const SizedBox(width: 10),
-              const Expanded(child: Text('ANALISI AI', style: TextStyle(fontSize: 12, letterSpacing: 2, fontWeight: FontWeight.w700))),
+              Expanded(child: Text(t('AI ANALYSIS'), style: TextStyle(fontSize: 12, letterSpacing: 2, fontWeight: FontWeight.w700))),
               IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
             ]),
             if (status != null && !ok)
@@ -101,14 +102,14 @@ class _AiDialogState extends State<AiDialog> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(border: Border.all(color: accent.withValues(alpha: 0.5)), borderRadius: BorderRadius.circular(6)),
                 child: Row(children: [
-                  Expanded(child: Text('Connettore non configurato: ${status!.reason}.', style: const TextStyle(fontSize: 12))),
-                  TextButton(onPressed: () => Navigator.pop(context, 'settings'), child: const Text('CONFIGURA')),
+                  Expanded(child: Text(t('Connector not configured: {0}.', [status!.reason]), style: const TextStyle(fontSize: 12))),
+                  TextButton(onPressed: () => Navigator.pop(context, 'settings'), child: Text(t('CONFIGURE'))),
                 ]),
               )
             else if (status != null)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text('${status!.provider} · ${status!.model}  —  i dati dell\'indagine vengono inviati a questo servizio',
+                child: Text(t('{0} · {1}  —  the investigation data is sent to this service', [status!.provider, status!.model]),
                     style: const TextStyle(fontSize: 11, color: dim)),
               ),
             const SizedBox(height: 14),
@@ -134,12 +135,12 @@ class _AiDialogState extends State<AiDialog> {
                   controller: question,
                   enabled: ok && !busy,
                   style: const TextStyle(fontSize: 12.5),
-                  decoration: const InputDecoration(hintText: 'fai una domanda sull\'indagine…'),
+                  decoration: InputDecoration(hintText: t('ask a question about the investigation…')),
                   onSubmitted: (q) => q.trim().isEmpty ? null : _run('ask', q: q),
                 ),
               ),
               IconButton(
-                tooltip: 'Chiedi',
+                tooltip: t('Ask'),
                 icon: const Icon(Icons.send, size: 18),
                 onPressed: ok && !busy && question.text.trim().isNotEmpty ? () => _run('ask', q: question.text) : null,
               ),
@@ -151,7 +152,7 @@ class _AiDialogState extends State<AiDialog> {
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
                   icon: const Icon(Icons.copy, size: 14),
-                  label: const Text('Copia', style: TextStyle(fontSize: 11.5)),
+                  label: Text(t('Copy'), style: TextStyle(fontSize: 11.5)),
                   onPressed: () => Clipboard.setData(ClipboardData(text: text!)),
                 ),
               ),
@@ -163,21 +164,21 @@ class _AiDialogState extends State<AiDialog> {
 
   Widget _output() {
     if (busy) {
-      return const Center(
+      return Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
-          SizedBox(height: 12),
-          Text('il modello sta analizzando il grafo…', style: TextStyle(fontSize: 11.5, color: dim)),
+          const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
+          const SizedBox(height: 12),
+          Text(t('the model is analysing the graph…'), style: TextStyle(fontSize: 11.5, color: dim)),
         ]),
       );
     }
     if (error != null) return SingleChildScrollView(child: SelectableText(error!, style: const TextStyle(fontSize: 12, color: accent, height: 1.5)));
     if (text == null) {
-      return const Center(child: Text('scegli un\'analisi o scrivi una domanda', style: TextStyle(fontSize: 12, color: dim)));
+      return Center(child: Text(t('pick an analysis or write a question'), style: TextStyle(fontSize: 12, color: dim)));
     }
     return ListView(children: [
       if (pivots.isNotEmpty) ...[
-        const Text('SUGGERIMENTI', style: TextStyle(fontSize: 10, letterSpacing: 1.6, color: dim)),
+        Text(t('SUGGESTIONS'), style: TextStyle(fontSize: 10, letterSpacing: 1.6, color: dim)),
         const SizedBox(height: 6),
         for (final p in pivots)
           Container(
@@ -189,11 +190,11 @@ class _AiDialogState extends State<AiDialog> {
               const SizedBox(width: 10),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('${p.type} · ${p.value}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                  Text('${typeLabel(p.type)} · ${p.value}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
                   if (p.reason.isNotEmpty) Text(p.reason, style: const TextStyle(fontSize: 11.5, color: dim, height: 1.4)),
                 ]),
               ),
-              TextButton(onPressed: () => Navigator.pop(context, p), child: const Text('ESPANDI')),
+              TextButton(onPressed: () => Navigator.pop(context, p), child: Text(t('EXPAND'))),
             ]),
           ),
         const SizedBox(height: 8),

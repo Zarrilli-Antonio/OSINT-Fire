@@ -6,10 +6,12 @@ import 'package:flutter/services.dart';
 
 import 'api.dart';
 import 'backend.dart';
+import 'flags.dart';
+import 'l10n.dart';
 import 'platform.dart';
 import 'theme.dart';
 
-/// Settings in five tabs. Edits are collected in a patch and sent together with "Salva"; the backend validates
+/// Settings in five tabs. Edits are collected in a patch and sent together with "Save"; the backend validates
 /// the whole patch or none of it. Pops `true` when something was saved so the caller can reload.
 class SettingsDialog extends StatefulWidget {
   const SettingsDialog({super.key, required this.backend, this.initialTab = 0, this.initial, this.initialCollectors, this.initialStats});
@@ -67,7 +69,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
         stats = r[2] as Map<String, dynamic>;
       });
     } catch (e) {
-      if (mounted) setState(() => error = 'Impossibile leggere le impostazioni: $e');
+      if (mounted) setState(() => error = t('Could not read settings: {0}', [e]));
     }
   }
 
@@ -94,7 +96,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
           c.clear();
         }
         saved = true;
-        notice = 'Impostazioni salvate';
+        notice = t('Settings saved');
       });
     } catch (e) {
       if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
@@ -105,6 +107,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    LangScope.watch(context);
     return DefaultTabController(
       length: 5,
       initialIndex: widget.initialTab,
@@ -119,19 +122,19 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 12, 0),
                     child: Row(children: [
-                      const Expanded(child: Text('IMPOSTAZIONI', style: TextStyle(fontSize: 12, letterSpacing: 2, fontWeight: FontWeight.w700))),
+                      Expanded(child: Text(t('SETTINGS'), style: TextStyle(fontSize: 12, letterSpacing: 2, fontWeight: FontWeight.w700))),
                       IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context, saved)),
                     ]),
                   ),
-                  const TabBar(
+                  TabBar(
                     isScrollable: true,
                     tabAlignment: TabAlignment.start,
                     dividerColor: line,
                     indicatorColor: accent,
                     labelColor: fg,
                     unselectedLabelColor: dim,
-                    labelStyle: TextStyle(fontSize: 12, fontFamily: mono),
-                    tabs: [Tab(text: 'Generale'), Tab(text: 'Fonti'), Tab(text: 'Chiavi API'), Tab(text: 'AI'), Tab(text: 'Dati')],
+                    labelStyle: const TextStyle(fontSize: 12, fontFamily: mono),
+                    tabs: [Tab(text: t('General')), Tab(text: t('Sources')), Tab(text: t('API keys')), const Tab(text: 'AI'), Tab(text: t('Data'))],
                   ),
                   Expanded(
                     child: TabBarView(children: [_general(), _sources(), _keys(), _ai(), _data()]),
@@ -141,14 +144,14 @@ class _SettingsDialogState extends State<SettingsDialog> {
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
                     child: Row(children: [
                       Expanded(
-                        child: Text(error ?? notice ?? (patch.isEmpty ? '' : '${patch.length} modifiche non salvate'),
+                        child: Text(error ?? notice ?? (patch.isEmpty ? '' : t('{0} unsaved changes', [patch.length])),
                             maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11.5, color: error != null ? accent : dim)),
                       ),
-                      TextButton(onPressed: () => Navigator.pop(context, saved), child: const Text('Chiudi')),
+                      TextButton(onPressed: () => Navigator.pop(context, saved), child: Text(t('Close'))),
                       const SizedBox(width: 8),
                       SizedBox(
                         width: 120,
-                        child: FilledButton(onPressed: patch.isEmpty || saving ? null : _save, child: Text(saving ? '…' : 'SALVA')),
+                        child: FilledButton(onPressed: patch.isEmpty || saving ? null : _save, child: Text(saving ? '…' : t('SAVE'))),
                       ),
                     ]),
                   ),
@@ -160,9 +163,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
 
   // ---------------- building blocks ----------------
 
-  Widget _section(String t) => Padding(
+  Widget _section(String title) => Padding(
         padding: const EdgeInsets.only(top: 20, bottom: 4),
-        child: Text(t.toUpperCase(), style: const TextStyle(fontSize: 10, letterSpacing: 1.6, color: dim)),
+        child: Text(title.toUpperCase(), style: const TextStyle(fontSize: 10, letterSpacing: 1.6, color: dim)),
       );
 
   Widget _switch(String key, String title, String help) => SwitchListTile(
@@ -236,7 +239,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Expanded(child: Text(title, style: const TextStyle(fontSize: 12.5))),
-          Text(removing ? 'verrà rimossa' : (hint.isEmpty ? 'non impostata' : 'impostata $hint'),
+          Text(removing ? t('will be removed') : (hint.isEmpty ? t('not set') : t('set {0}', [hint])),
               style: TextStyle(fontSize: 11, color: removing ? accent : (hint.isEmpty ? dim : const Color(0xFF7EE787)))),
           if (hint.isNotEmpty && !removing)
             TextButton(
@@ -244,7 +247,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 ctl.clear();
                 set(key, '');
               },
-              child: const Text('rimuovi', style: TextStyle(fontSize: 11)),
+              child: Text(t('remove'), style: TextStyle(fontSize: 11)),
             ),
         ]),
         Text(help, style: const TextStyle(fontSize: 11, color: dim)),
@@ -252,7 +255,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
           controller: ctl,
           obscureText: true,
           style: const TextStyle(fontSize: 12),
-          decoration: InputDecoration(hintText: hint.isEmpty ? 'incolla la chiave' : 'incolla per sostituirla'),
+          decoration: InputDecoration(hintText: hint.isEmpty ? t('paste the key') : t('paste to replace it')),
           onChanged: (x) => x.isEmpty ? setState(() => patch.remove(key)) : set(key, x),
         ),
       ]),
@@ -263,49 +266,78 @@ class _SettingsDialogState extends State<SettingsDialog> {
 
   // ---------------- tabs ----------------
 
+  Future<void> _pickLang(String code) async {
+    final before = appLang.value;
+    appLang.value = code; // immediate: the whole interface switches now
+    try {
+      await saveSettings({'language': code});
+      saved = true;
+    } catch (e) {
+      appLang.value = before;
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Widget _languagePicker() => Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final code in supportedLangs)
+            ChoiceChip(
+              key: ValueKey('lang-$code'),
+              avatar: FlagIcon(code, width: 20),
+              label: Text(langNames[code]!, style: const TextStyle(fontSize: 12)),
+              selected: appLang.value == code,
+              showCheckmark: false,
+              onSelected: (_) => _pickLang(code),
+            ),
+        ]),
+      );
+
   Widget _general() => _page([
-        _section('Nuove ricerche'),
-        _num('default_depth', 'Profondità predefinita', 'Quanti passi seguire i dati trovati (0-4).'),
-        _num('default_max_entities', 'Limite di entità per ricerca', 'La ricerca smette di seguire nuovi dati oltre questo numero.'),
-        _section('Gestione dei dati'),
-        _switch('passive_only', 'Solo fonti passive', 'Non contattare i server del bersaglio: salta sito web, porta TLS e prove di nomi DNS. Le altre fonti restano attive.'),
-        _switch('fetch_avatars', 'Scarica le immagini profilo', 'Serve a confrontare le foto tra profili. Disattivandolo non vengono scaricate né salvate immagini.'),
-        _num('cache_ttl_hours', 'Validità della cache', 'Per quante ore riusare un risultato già ottenuto (0 = rifai sempre le richieste).', suffix: 'ore'),
-        _lines('ignored_domains', 'Domini da non tracciare', 'Provider di posta pubblici e simili (gmail.com, outlook.com…): i loro indirizzi vengono cercati, ma il dominio non viene analizzato. Un dominio scelto come seed viene sempre cercato.'),
-        _num('group_min', 'Raggruppa nodi da', 'Numero minimo di nodi simili che il grafo unisce in un gruppo.'),
-        _section('Rete'),
-        _num('concurrency', 'Richieste in parallelo', 'Più alto è più veloce ma più facile essere bloccati dai siti.'),
-        _num('http_timeout', 'Timeout richieste', 'Attesa massima per una risposta.', suffix: 'sec'),
-        _text('user_agent', 'User-Agent', 'Identità inviata ai siti interrogati.'),
-        _text('proxy', 'Proxy', 'Per esempio socks5://127.0.0.1:9050 (Tor) o http://host:porta. Vale per le fonti web e per Maigret; le query DNS non passano dal proxy.',
-            hint: 'vuoto = connessione diretta'),
-        _section('Ricerca sui social'),
-        _switch('auto_username_from_email', 'Da un\'email, cerca lo username', 'Segue la parte prima della @ (se sembra personale, per esempio mario.rossi) e controlla centinaia di siti e social con Maigret.'),
-        _switch('auto_username_from_name', 'Da un nome, prova gli username probabili', 'Per «Mario Rossi» prova mariorossi, mario.rossi, mrossi… Dà molti falsi positivi e ogni tentativo richiede circa un minuto.'),
-        _section('Scansione username (Maigret)'),
-        _num('maigret_top_sites', 'Siti controllati', 'Più siti = più risultati e più tempo.'),
-        _num('maigret_timeout', 'Timeout per sito', '', suffix: 'sec'),
+        _section(t('Language')),
+        _languagePicker(),
+        _section(t('New searches')),
+        _num('default_depth', t('Default depth'), t('How many steps to follow the data found (0-4).')),
+        _num('default_max_entities', t('Entity limit per search'), t('The search stops following new data beyond this number.')),
+        _section(t('Data handling')),
+        _switch('passive_only', t('Passive sources only'), t('Do not contact the target\'s servers: skips website, TLS port and DNS name guessing. Other sources stay active.')),
+        _switch('fetch_avatars', t('Download profile images'), t('Used to compare photos across profiles. When off, no images are downloaded or saved.')),
+        _num('cache_ttl_hours', t('Cache validity'), t('For how many hours to reuse a result already obtained (0 = always repeat the requests).'), suffix: t('hours')),
+        _lines('ignored_domains', t('Domains not to track'), t('Public mail providers and the like (gmail.com, outlook.com…): their addresses are searched, but the domain is not analysed. A domain chosen as seed is always searched.')),
+        _num('group_min', t('Group nodes from'), t('Minimum number of similar nodes the graph merges into one group.')),
+        _section(t('Network')),
+        _num('concurrency', t('Parallel requests'), t('Higher is faster but makes it easier for sites to block you.')),
+        _num('http_timeout', t('Request timeout'), t('Maximum wait for a response.'), suffix: t('sec')),
+        _text('user_agent', 'User-Agent', t('Identity sent to the sites queried.')),
+        _text('proxy', 'Proxy', t('For example socks5://127.0.0.1:9050 (Tor) or http://host:port. Applies to web sources and Maigret; DNS queries do not go through the proxy.'),
+            hint: t('empty = direct connection')),
+        _section(t('Social media search')),
+        _switch('auto_username_from_email', t('From an email, look up the username'), t('Follows the part before the @ (if it looks personal, for example john.smith) and checks hundreds of sites and social networks with Maigret.')),
+        _switch('auto_username_from_name', t('From a name, try likely usernames'), t('For “Mario Rossi” it tries mariorossi, mario.rossi, mrossi… Gives many false positives and each attempt takes about a minute.')),
+        _section(t('Username scan (Maigret)')),
+        _num('maigret_top_sites', t('Sites checked'), t('More sites = more results and more time.')),
+        _num('maigret_timeout', t('Timeout per site'), '', suffix: t('sec')),
       ]);
 
   Widget _sources() {
     final disabled = <String>{...(v('disabled_collectors') as List).cast<String>()};
     final q = filter.toLowerCase();
-    final rows = collectors.where((c) => q.isEmpty || c.name.contains(q) || c.accepts.any((t) => t.toLowerCase().contains(q))).toList()
+    final rows = collectors.where((c) => q.isEmpty || c.name.contains(q) || c.accepts.any((a) => a.toLowerCase().contains(q))).toList()
       ..sort((a, b) => a.name.compareTo(b.name));
-    Widget chip(String t, Color c) => Container(
+    Widget chip(String label, Color c) => Container(
           margin: const EdgeInsets.only(left: 6),
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(border: Border.all(color: c.withValues(alpha: 0.6)), borderRadius: BorderRadius.circular(3)),
-          child: Text(t, style: TextStyle(fontSize: 9.5, color: c)),
+          child: Text(label, style: TextStyle(fontSize: 9.5, color: c)),
         );
     return Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
         child: Row(children: [
-          Expanded(child: TextField(decoration: const InputDecoration(hintText: 'cerca fonte o tipo', prefixIcon: Icon(Icons.search, size: 16)), onChanged: (x) => setState(() => filter = x))),
+          Expanded(child: TextField(decoration: InputDecoration(hintText: t('search source or type'), prefixIcon: const Icon(Icons.search, size: 16)), onChanged: (x) => setState(() => filter = x))),
           const SizedBox(width: 12),
-          Text('${collectors.length - disabled.length} attive su ${collectors.length}', style: const TextStyle(fontSize: 11, color: dim)),
-          TextButton(onPressed: () => set('disabled_collectors', <String>[]), child: const Text('abilita tutte', style: TextStyle(fontSize: 11))),
+          Text(t('{0} active of {1}', [collectors.length - disabled.length, collectors.length]), style: const TextStyle(fontSize: 11, color: dim)),
+          TextButton(onPressed: () => set('disabled_collectors', <String>[]), child: Text(t('enable all'), style: TextStyle(fontSize: 11))),
         ]),
       ),
       Expanded(
@@ -318,8 +350,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
               onChanged: (on) => set('disabled_collectors', (on ? (disabled..remove(c.name)) : (disabled..add(c.name))).toList()..sort()),
               title: Row(children: [
                 Text(c.name, style: const TextStyle(fontSize: 12.5)),
-                if (c.active) chip('contatta il bersaglio', accent),
-                if (c.key != null) chip('richiede chiave', c.status == 'nokey' ? dim : const Color(0xFF7EE787)),
+                if (c.active) chip(t('contacts the target'), accent),
+                if (c.key != null) chip(t('requires key'), c.status == 'nokey' ? dim : const Color(0xFF7EE787)),
               ]),
               subtitle: Text(c.accepts.join(' · '), style: const TextStyle(fontSize: 10.5, color: dim)),
             ),
@@ -346,7 +378,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   /// One service: its credential fields, whether they are set, and a button that tries them for real.
   Widget _provider(String id, String title, String help, List<(String, String)> keys) {
     final set_ = keys.every((k) => (s!.secrets[k.$1] ?? '').isNotEmpty);
-    final t = tests[id];
+    final res = tests[id];
     return Container(
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
@@ -361,100 +393,100 @@ class _SettingsDialogState extends State<SettingsDialog> {
           else
             TextButton(
               onPressed: set_ && patch.isEmpty ? () => _test(id) : null,
-              child: const Text('PROVA', style: TextStyle(fontSize: 11, letterSpacing: 1)),
+              child: Text(t('TEST'), style: TextStyle(fontSize: 11, letterSpacing: 1)),
             ),
         ]),
         Text(help, style: const TextStyle(fontSize: 11, color: dim, height: 1.4)),
         for (final k in keys) _secret(k.$1, k.$2, ''),
-        if (t != null)
+        if (res != null)
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Text(t.$1 ? '✓ ${t.$2}' : '✗ ${t.$2}', style: TextStyle(fontSize: 11, color: t.$1 ? const Color(0xFF7EE787) : accent)),
+            child: Text(res.$1 ? '✓ ${res.$2}' : '✗ ${res.$2}', style: TextStyle(fontSize: 11, color: res.$1 ? const Color(0xFF7EE787) : accent)),
           ),
       ]),
     );
   }
 
   Widget _keys() => _page([
-        const Padding(
-          padding: EdgeInsets.only(top: 12),
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
           child: Text(
-              'Qui colleghi i tuoi account alle API ufficiali delle piattaforme: le ricerche vengono fatte a nome tuo, entro i limiti e i termini del servizio. '
-              'Facebook, Instagram e LinkedIn non offrono un\'API per cercare persone e vietano l\'accesso automatico con un account, quindi per quelli usa i '
-              'pulsanti CERCA SU del pannello dettaglio: aprono la ricerca nel tuo browser, dove sei già collegato.',
-              style: TextStyle(fontSize: 11.5, color: dim, height: 1.45)),
+              t('Here you connect your accounts to the platforms\' official APIs: searches are made on your behalf, within the limits and terms of the service. '
+                  'Facebook, Instagram and LinkedIn do not offer an API to search for people and forbid automated access with an account, so for those use the '
+                  'SEARCH ON buttons in the detail panel: they open the search in your browser, where you are already signed in.'),
+              style: const TextStyle(fontSize: 11.5, color: dim, height: 1.45)),
         ),
-        const Padding(
-          padding: EdgeInsets.only(top: 6),
-          child: Text('Le credenziali restano sul tuo computer, nel database locale, non cifrate.', style: TextStyle(fontSize: 11.5, color: dim)),
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(t('Credentials stay on your computer, in the local database, unencrypted.'), style: const TextStyle(fontSize: 11.5, color: dim)),
         ),
-        _section('Account collegati'),
-        _provider('github', 'GitHub', 'Token personale senza permessi: porta il limite da 60 a 5000 richieste l\'ora.', [('github_token', 'token')]),
-        _provider('reddit', 'Reddit', 'Crea un\'app «script» su reddit.com/prefs/apps. Profilo, anzianità, karma e community in cui è attivo.',
+        _section(t('Connected accounts')),
+        _provider('github', 'GitHub', t('Personal token with no permissions: raises the limit from 60 to 5000 requests an hour.'), [('github_token', 'token')]),
+        _provider('reddit', 'Reddit', t('Create a “script” app at reddit.com/prefs/apps. Profile, account age, karma and communities where it is active.'),
             [('reddit_client_id', 'client id'), ('reddit_client_secret', 'client secret')]),
-        _provider('twitch', 'Twitch', 'App su dev.twitch.tv/console. Profilo, descrizione, data di creazione, tipo di canale.',
+        _provider('twitch', 'Twitch', t('App at dev.twitch.tv/console. Profile, description, creation date, channel type.'),
             [('twitch_client_id', 'client id'), ('twitch_client_secret', 'client secret')]),
-        _provider('youtube', 'YouTube', 'Chiave API di Google Cloud (YouTube Data API v3, quota gratuita). Canale per handle: paese, descrizione, data di creazione.', [('youtube_key', 'chiave API')]),
-        _provider('spotify', 'Spotify', 'App su developer.spotify.com. Profilo pubblico di un utente per id.',
+        _provider('youtube', 'YouTube', t('Google Cloud API key (YouTube Data API v3, free quota). Channel by handle: country, description, creation date.'), [('youtube_key', t('api key'))]),
+        _provider('spotify', 'Spotify', t('App at developer.spotify.com. Public profile of a user by id.'),
             [('spotify_client_id', 'client id'), ('spotify_client_secret', 'client secret')]),
-        _provider('x', 'X (Twitter)', 'Bearer token dell\'API v2 (richiede un piano a pagamento). Profilo, bio, luogo, sito, data di creazione.', [('x_bearer', 'bearer token')]),
-        _section('Fonti con chiave'),
-        _provider('virustotal', 'VirusTotal', 'Sottodomini, risoluzioni storiche e reputazione di domini e IP (piano gratuito).', [('virustotal_key', 'chiave')]),
-        _provider('shodan', 'Shodan', 'Porte, banner e vulnerabilità degli IP oltre ai dati gratuiti di InternetDB.', [('shodan_key', 'chiave')]),
-        _provider('hunter', 'Hunter.io', 'Email e formato degli indirizzi di un dominio.', [('hunter_key', 'chiave')]),
-        _provider('hibp', 'Have I Been Pwned', 'Breach con data e tipo di dati esposti per ogni email.', [('hibp_key', 'chiave')]),
-        _provider('securitytrails', 'SecurityTrails', 'Elenco sottodomini.', [('securitytrails_key', 'chiave')]),
-        _provider('abuseipdb', 'AbuseIPDB', 'Reputazione e segnalazioni di un IP.', [('abuseipdb_key', 'chiave')]),
-        _provider('greynoise', 'GreyNoise (community)', 'Dice se un IP fa scansioni di massa o è un servizio noto e benigno.', [('greynoise_key', 'chiave')]),
-        _provider('otx', 'AlienVault OTX', 'DNS passivo storico di domini e IP (account gratuito).', [('otx_key', 'chiave')]),
-        _provider('abusech', 'abuse.ch (URLhaus)', 'URL malevoli associati a un dominio o IP (account gratuito).', [('abusech_key', 'chiave')]),
-        _provider('companieshouse', 'Companies House (UK)', 'Società e amministratori del registro imprese britannico (chiave gratuita).', [('companieshouse_key', 'chiave')]),
+        _provider('x', 'X (Twitter)', t('API v2 bearer token (requires a paid plan). Profile, bio, location, website, creation date.'), [('x_bearer', 'bearer token')]),
+        _section(t('Sources with a key')),
+        _provider('virustotal', 'VirusTotal', t('Subdomains, historical resolutions and reputation of domains and IPs (free plan).'), [('virustotal_key', t('key'))]),
+        _provider('shodan', 'Shodan', t('Ports, banners and vulnerabilities of IPs, beyond the free InternetDB data.'), [('shodan_key', t('key'))]),
+        _provider('hunter', 'Hunter.io', t('Emails and address format of a domain.'), [('hunter_key', t('key'))]),
+        _provider('hibp', 'Have I Been Pwned', t('Breaches with date and type of data exposed for each email.'), [('hibp_key', t('key'))]),
+        _provider('securitytrails', 'SecurityTrails', t('Subdomain list.'), [('securitytrails_key', t('key'))]),
+        _provider('abuseipdb', 'AbuseIPDB', t('Reputation and reports of an IP.'), [('abuseipdb_key', t('key'))]),
+        _provider('greynoise', 'GreyNoise (community)', t('Tells whether an IP does mass scanning or is a known, benign service.'), [('greynoise_key', t('key'))]),
+        _provider('otx', 'AlienVault OTX', t('Historical passive DNS of domains and IPs (free account).'), [('otx_key', t('key'))]),
+        _provider('abusech', 'abuse.ch (URLhaus)', t('Malicious URLs linked to a domain or IP (free account).'), [('abusech_key', t('key'))]),
+        _provider('companieshouse', 'Companies House (UK)', t('Companies and directors from the UK business register (free key).'), [('companieshouse_key', t('key'))]),
       ]);
 
   Widget _ai() {
     final exe = Backend.bundled();
-    final dirPath = widget.backend.dir()?.path ?? '<percorso>/backend';
+    final dirPath = widget.backend.dir()?.path ?? t('<path>/backend');
     final server = exe != null
         ? {'command': exe.path, 'args': ['--mcp']} // packaged app: the bundled executable doubles as the MCP server
         : {'command': 'uv', 'args': ['run', '--directory', dirPath, '--extra', 'mcp', 'python', '-m', 'osint.mcp_server']};
     final snippet = const JsonEncoder.withIndent('  ').convert({'mcpServers': {'osint-fire': server}});
     final provider = v('ai_provider') as String;
     return _page([
-      _section('Connettore AI integrato'),
-      const Text(
-          'Il grafo dell\'indagine (entità, relazioni, collegamenti) viene inviato al provider scelto per riassunti, verifiche e suggerimenti. '
-          'Con un modello locale (per esempio Ollama) i dati non lasciano il computer.',
-          style: TextStyle(fontSize: 11.5, color: dim, height: 1.4)),
+      _section(t('Built-in AI connector')),
+      Text(
+          t('The investigation graph (entities, relations, links) is sent to the chosen provider for summaries, checks and suggestions. '
+              'With a local model (for example Ollama) the data does not leave your computer.'),
+          style: const TextStyle(fontSize: 11.5, color: dim, height: 1.4)),
       const SizedBox(height: 10),
       DropdownButtonFormField<String>(
         initialValue: provider,
         dropdownColor: const Color(0xFF131316),
-        decoration: const InputDecoration(labelText: 'Provider'),
-        items: const [
+        decoration: InputDecoration(labelText: t('Provider')),
+        items: [
           DropdownMenuItem(value: 'anthropic', child: Text('Anthropic (Claude)', style: TextStyle(fontSize: 12))),
-          DropdownMenuItem(value: 'openai', child: Text('Compatibile OpenAI (OpenAI, Ollama, LM Studio, OpenRouter…)', style: TextStyle(fontSize: 12))),
+          DropdownMenuItem(value: 'openai', child: Text(t('OpenAI-compatible (OpenAI, Ollama, LM Studio, OpenRouter…)'), style: const TextStyle(fontSize: 12))),
         ],
         onChanged: (x) => set('ai_provider', x),
       ),
-      _text('ai_model', 'Modello', provider == 'anthropic' ? 'Per esempio claude-sonnet-5-5.' : 'Per esempio gpt-4o-mini o llama3.1.'),
-      _text('ai_base_url', 'Indirizzo del servizio', provider == 'anthropic' ? 'Lascia vuoto per il servizio Anthropic.' : 'Vuoto = OpenAI. Per Ollama: http://localhost:11434/v1',
-          hint: 'facoltativo'),
-      _secret('ai_key', 'Chiave API', provider == 'openai' ? 'Con un servizio locale può restare vuota.' : 'Obbligatoria per Anthropic.'),
+      _text('ai_model', t('Model'), provider == 'anthropic' ? t('For example claude-sonnet-5-5.') : t('For example gpt-4o-mini or llama3.1.')),
+      _text('ai_base_url', t('Service address'), provider == 'anthropic' ? t('Leave empty for the Anthropic service.') : t('Empty = OpenAI. For Ollama: http://localhost:11434/v1'),
+          hint: t('optional')),
+      _secret('ai_key', t('API key'), provider == 'openai' ? t('With a local service it can stay empty.') : t('Required for Anthropic.')),
       Align(
         alignment: Alignment.centerLeft,
         child: Row(children: [
-          TextButton(onPressed: patch.isEmpty && !testing.contains('ai') ? () => _test('ai') : null, child: const Text('PROVA LA CONNESSIONE', style: TextStyle(fontSize: 11, letterSpacing: 1))),
+          TextButton(onPressed: patch.isEmpty && !testing.contains('ai') ? () => _test('ai') : null, child: Text(t('TEST THE CONNECTION'), style: const TextStyle(fontSize: 11, letterSpacing: 1))),
           if (tests['ai'] != null)
             Expanded(child: Text(tests['ai']!.$1 ? '✓ ${tests['ai']!.$2}' : '✗ ${tests['ai']!.$2}', style: TextStyle(fontSize: 11, color: tests['ai']!.$1 ? const Color(0xFF7EE787) : accent))),
         ]),
       ),
-      _switch('ai_send_notes', 'Invia le mie note private', 'Le note e le stelle che hai messo ai nodi vengono incluse nel contesto.'),
-      _num('ai_max_entities', 'Entità massime inviate', 'Il grafo viene ridotto alle più collegate (e ai preferiti) oltre questo numero.'),
-      _section('Connettore MCP (per Claude Desktop e altri agenti)'),
-      const Text(
-          'Permette a un assistente AI di avviare e leggere le indagini di OSINT-Fire mentre l\'app è aperta. '
-          'Aggiungi questo blocco alla configurazione MCP del tuo client.',
-          style: TextStyle(fontSize: 11.5, color: dim, height: 1.4)),
+      _switch('ai_send_notes', t('Send my private notes'), t('The notes and stars you put on nodes are included in the context.')),
+      _num('ai_max_entities', t('Maximum entities sent'), t('Beyond this number the graph is reduced to the most connected (and favourite) ones.')),
+      _section(t('MCP connector (for Claude Desktop and other agents)')),
+      Text(
+          t('Lets an AI assistant start and read OSINT-Fire investigations while the app is open. '
+              'Add this block to your client\'s MCP configuration.'),
+          style: const TextStyle(fontSize: 11.5, color: dim, height: 1.4)),
       const SizedBox(height: 8),
       Container(
         padding: const EdgeInsets.all(12),
@@ -465,10 +497,10 @@ class _SettingsDialogState extends State<SettingsDialog> {
         alignment: Alignment.centerLeft,
         child: TextButton.icon(
           icon: const Icon(Icons.copy, size: 14),
-          label: const Text('Copia configurazione', style: TextStyle(fontSize: 11.5)),
+          label: Text(t('Copy configuration'), style: const TextStyle(fontSize: 11.5)),
           onPressed: () async {
             await Clipboard.setData(ClipboardData(text: snippet));
-            if (mounted) setState(() => notice = 'Configurazione MCP copiata');
+            if (mounted) setState(() => notice = t('MCP configuration copied'));
           },
         ),
       ),
@@ -511,48 +543,48 @@ class _SettingsDialogState extends State<SettingsDialog> {
         );
 
     return _page([
-      _section('Archivio locale'),
-      stat('Percorso', stats['path']),
-      stat('Dimensione', size(stats['size'] ?? 0)),
-      stat('Ricerche', stats['investigations']),
-      stat('Entità', stats['entities']),
-      stat('Evidenze', stats['evidence']),
-      stat('Risultati in cache', stats['cache_entries']),
-      stat('Immagini', stats['images']),
-      stat('Note', stats['notes']),
-      _section('Manutenzione'),
-      action('Svuota la cache', 'Cancella i risultati riusabili: la prossima ricerca rifà tutte le richieste.', 'SVUOTA',
-          () => run(() async => 'Cache svuotata (${await clearCache()} voci)')),
-      action('Compatta il database', 'Libera lo spazio lasciato dai dati cancellati.', 'COMPATTA', () => run(() async {
+      _section(t('Local storage')),
+      stat(t('Path'), stats['path']),
+      stat(t('Size'), size(stats['size'] ?? 0)),
+      stat(t('Searches'), stats['investigations']),
+      stat(t('Entities'), stats['entities']),
+      stat(t('Evidence'), stats['evidence']),
+      stat(t('Cached results'), stats['cache_entries']),
+      stat(t('Images'), stats['images']),
+      stat(t('Notes'), stats['notes']),
+      _section(t('Maintenance')),
+      action(t('Clear the cache'), t('Deletes reusable results: the next search repeats all requests.'), t('CLEAR'),
+          () => run(() async => t('Cache cleared ({0} entries)', [await clearCache()]))),
+      action(t('Compact the database'), t('Frees the space left by deleted data.'), t('COMPACT'), () => run(() async {
             await vacuumDb();
-            return 'Database compattato';
+            return t('Database compacted');
           })),
-      action('Backup completo', 'Salva in Download una copia di ricerche, note e impostazioni (comprese le chiavi API).', 'SALVA COPIA', () => run(() async {
+      action(t('Full backup'), t('Saves a copy of searches, notes and settings (including API keys) to Downloads.'), t('SAVE COPY'), () => run(() async {
             final path = '${downloadsDir()}/osint-fire-backup-${DateTime.now().millisecondsSinceEpoch ~/ 1000}.db';
             await File(path).writeAsBytes(await backupBytes());
-            return 'Backup salvato: $path';
+            return t('Backup saved: {0}', [path]);
           })),
-      _section('Zona pericolosa'),
+      _section(t('Danger zone')),
       Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(border: Border.all(color: accent.withValues(alpha: 0.5)), borderRadius: BorderRadius.circular(6)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Elimina tutte le ricerche', style: TextStyle(fontSize: 12.5, color: accent)),
-          const Text('Cancella ricerche, grafi, evidenze, note, immagini e cache. Le impostazioni restano. Non si può annullare.', style: TextStyle(fontSize: 11, color: dim)),
+          Text(t('Delete all searches'), style: const TextStyle(fontSize: 12.5, color: accent)),
+          Text(t('Deletes searches, graphs, evidence, notes, images and cache. Settings are kept. This cannot be undone.'), style: const TextStyle(fontSize: 11, color: dim)),
           Row(children: [
-            Expanded(child: TextField(decoration: const InputDecoration(hintText: 'scrivi ELIMINA per confermare'), onChanged: (x) => setState(() => wipeWord = x))),
+            Expanded(child: TextField(decoration: InputDecoration(hintText: t('type {0} to confirm', [t('DELETE')])), onChanged: (x) => setState(() => wipeWord = x))),
             const SizedBox(width: 12),
             OutlinedButton(
               style: OutlinedButton.styleFrom(foregroundColor: accent, side: const BorderSide(color: accent)),
-              onPressed: wipeWord == 'ELIMINA'
+              onPressed: wipeWord == t('DELETE')
                   ? () => run(() async {
                         final n = await wipeAll(wipeWord);
                         wipeWord = '';
                         saved = true;
-                        return 'Eliminate $n ricerche';
+                        return t('Deleted {0} searches', [n]);
                       })
                   : null,
-              child: const Text('ELIMINA TUTTO', style: TextStyle(fontSize: 11.5)),
+              child: Text(t('DELETE EVERYTHING'), style: const TextStyle(fontSize: 11.5)),
             ),
           ]),
         ]),

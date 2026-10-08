@@ -4,10 +4,13 @@ import 'dart:ui' show Offset;
 
 import 'package:http/http.dart' as http;
 
+import 'l10n.dart';
+
 const baseUrl = 'http://127.0.0.1:8765';
 
 class GNode {
-  GNode(this.id, this.type, this.value, [this.members = const [], this.added = 0, this.manual = false, this.memberIds = const []]);
+  GNode(this.id, this.type, this.value, [this.members = const [], this.added = 0, this.manual = false, this.memberIds = const [], String? label]) : label = label ?? value;
+  final String label; // value as shown in the interface language (the value itself is the identity)
   final bool manual; // created by the user
   final List<int> memberIds; // entity ids behind a collapsed group
   final double added; // when the entity first appeared (epoch seconds)
@@ -17,7 +20,10 @@ class GNode {
 }
 
 class GEdge {
-  GEdge(this.src, this.dst, this.rel, this.conf, this.reason, this.collector, this.url, [this.id = 0, this.manual = false]);
+  GEdge(this.src, this.dst, this.rel, this.conf, this.reason, this.collector, this.url, [this.id = 0, this.manual = false, String? relLabel, String? reasonLabel])
+      : relLabel = relLabel ?? rel,
+        reasonLabel = reasonLabel ?? reason;
+  final String relLabel, reasonLabel; // as shown in the interface language
   final int id; // relation id (0 for the synthetic edge of a group)
   final bool manual; // a bridge drawn by the user
   final int src, dst;
@@ -26,7 +32,8 @@ class GEdge {
 }
 
 class GLink {
-  GLink(this.id, this.a, this.b, this.score, this.signals, this.status);
+  GLink(this.id, this.a, this.b, this.score, this.signals, this.status, [List<String>? signalLabels]) : signalLabels = signalLabels ?? signals;
+  final List<String> signalLabels; // signals in the interface language
   final int id, a, b;
   final double score;
   final List<String> signals;
@@ -40,7 +47,9 @@ class GNote {
 }
 
 class Graph {
-  Graph(this.nodes, this.edges, [this.links = const [], Map<int, GNote>? notes, Set<int>? hidden]) : notes = notes ?? {}, hidden = hidden ?? {};
+  Graph(this.nodes, this.edges, [this.links = const [], Map<int, GNote>? notes, Set<int>? hidden, this.typeLabels = const {}]) : notes = notes ?? {}, hidden = hidden ?? {};
+  final Map<String, String> typeLabels; // canonical type -> name in the interface language
+  String typeName(String type) => typeLabel(type, typeLabels);
   final List<GNode> nodes;
   final List<GEdge> edges;
   final List<GLink> links;
@@ -54,7 +63,7 @@ Future<void> saveNote(int inv, int entity, String text, bool starred) async {
     headers: {'content-type': 'application/json'},
     body: jsonEncode({'text': text, 'starred': starred}),
   );
-  if (r.statusCode != 200) throw Exception('nota non salvata (${r.statusCode})');
+  if (r.statusCode != 200) throw Exception(t('note not saved ({0})', [r.statusCode]));
 }
 
 Future<void> decideLink(int inv, int linkId, String decision) async {
@@ -116,28 +125,30 @@ Graph collapseGroups(Graph g, {int min = 6, Set<int> keep = const {}}) {
     edges.removeWhere((e) => gone.contains(e.dst));
     final id = -(src * 100000 + (type.hashCode ^ rel.hashCode).abs() % 99999 + 1); // stable across refetches
     final sorted = [...es]..sort((a, b) => byId[a.dst]!.value.compareTo(byId[b.dst]!.value));
-    nodes.add(GNode(id, type, '${es.length} ${type.toLowerCase()}', [for (final e in sorted) byId[e.dst]!.value], 0, false, [for (final e in sorted) e.dst]));
-    edges.add(GEdge(src, id, rel, es.first.conf, es.first.reason, es.first.collector, es.first.url));
+    nodes.add(GNode(id, type, '${es.length} ${type.toLowerCase()}', [for (final e in sorted) byId[e.dst]!.value], 0, false, [for (final e in sorted) e.dst],
+        '${es.length} ${g.typeName(type).toLowerCase()}'));
+    edges.add(GEdge(src, id, rel, es.first.conf, es.first.reason, es.first.collector, es.first.url, 0, false, es.first.relLabel, es.first.reasonLabel));
   }
-  return Graph(nodes, edges, g.links, g.notes, g.hidden);
+  return Graph(nodes, edges, g.links, g.notes, g.hidden, g.typeLabels);
 }
 
 Future<Graph> fetchGraph(int inv) async {
   final r = await http.get(Uri.parse('$baseUrl/investigations/$inv/graph'));
   final j = jsonDecode(r.body);
   return (Graph(
-    [for (final n in j['nodes']) GNode(n['id'], n['type'], n['value'], const [], (n['added'] as num).toDouble(), (n['manual'] ?? 0) == 1)],
+    [for (final n in j['nodes']) GNode(n['id'], n['type'], n['value'], const [], (n['added'] as num).toDouble(), (n['manual'] ?? 0) == 1, const [], n['label'] as String?)],
     [
       for (final e in j['edges'])
-        GEdge(e['src'], e['dst'], e['rel'], (e['conf'] as num).toDouble(), e['reason'], e['collector'], e['url'], e['id'], (e['manual'] ?? 0) == 1)
+        GEdge(e['src'], e['dst'], e['rel'], (e['conf'] as num).toDouble(), e['reason'], e['collector'], e['url'], e['id'], (e['manual'] ?? 0) == 1, e['rel_label'] as String?, e['reason_label'] as String?)
     ],
     [
       for (final l in j['links'])
         GLink(l['id'], l['a'], l['b'], (l['score'] as num).toDouble(), [for (final s in l['signals']) s[0] as String],
-            l['status'])
+            l['status'], [for (final s in l['signal_labels'] ?? l['signals'].map((s) => s[0])) s as String])
     ],
     {for (final n in j['notes'] ?? []) n['entity'] as int: GNote(n['text'] as String, n['starred'] as bool)},
     {for (final i in j['hidden'] ?? []) i as int},
+    Map<String, String>.from(j['type_labels'] ?? {}),
   ));
 }
 
@@ -387,7 +398,7 @@ Graph withoutHidden(Graph g) {
   if (g.hidden.isEmpty) return g;
   final h = g.hidden;
   return Graph([for (final n in g.nodes) if (!h.contains(n.id)) n], [for (final e in g.edges) if (!h.contains(e.src) && !h.contains(e.dst)) e],
-      [for (final l in g.links) if (!h.contains(l.a) && !h.contains(l.b)) l], g.notes, <int>{});
+      [for (final l in g.links) if (!h.contains(l.a) && !h.contains(l.b)) l], g.notes, <int>{}, g.typeLabels);
 }
 
 // ---------------- nodes and bridges made by the user, hiding ----------------

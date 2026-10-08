@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import 'api.dart';
+import 'l10n.dart';
 import 'platform.dart';
 
 /// Starts the Python backend as a child process if nothing answers on [baseUrl].
@@ -44,7 +45,7 @@ class Backend {
         _p = await Process.start(exe.path, [], workingDirectory: homeDir());
       } else {
         final dir = this.dir();
-        if (dir == null) return 'backend non trovato (imposta OSINT_BACKEND_DIR)';
+        if (dir == null) return t('backend not found (set OSINT_BACKEND_DIR)');
         _p = Platform.isWindows
             ? await Process.start('uv', ['run', 'python', 'run_backend.py'], workingDirectory: dir.path, runInShell: true)
             // login shell so PATH includes uv
@@ -54,13 +55,13 @@ class Backend {
       _p!.stdout.drain<void>();
       _p!.stderr.drain<void>();
     } catch (e) {
-      return 'avvio backend fallito: $e';
+      return t('backend failed to start: {0}', [e]);
     }
     for (var i = 0; i < 60; i++) {
       if (await _up()) return null;
       await Future.delayed(const Duration(milliseconds: 500));
     }
-    return 'backend avviato ma non risponde su $baseUrl';
+    return t('backend started but not responding on {0}', [baseUrl]);
   }
 
   void stop() {

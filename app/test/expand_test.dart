@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:osint_fire/api.dart';
+import 'package:osint_fire/l10n.dart';
 
 void main() {
+  setUpAll(() => appLang.value = 'it');
   (String, String)? t(String type, String value, {List<String> members = const []}) => expandTarget(GNode(1, type, value, members));
 
   test('searchable types expand as themselves', () {

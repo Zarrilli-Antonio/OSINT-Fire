@@ -1,10 +1,11 @@
 import asyncio
 
 from .collectors import applicable
+from . import i18n
 from .correlate import correlate
 from .db import DB
 from .models import PIVOT, norm
-from .settings import is_ignored_domain
+from .settings import is_ignored_domain, lang
 
 # ponytail: one global semaphore, no per-host rate limit. Add per-host limiter if a source starts throttling.
 SEM = asyncio.Semaphore(8)
@@ -65,7 +66,9 @@ async def investigate(db: DB, inv: int, seeds: list[tuple[str, str]], max_depth:
                         emit({"type": "run", "collector": c.name, "target": v, "found": len(res)})
                         for f in res:
                             if db.add_finding(inv, c.name, f):
-                                emit({"type": "entity", "entity": {"type": f.dst[0], "value": norm(*f.dst)}, "via": c.name})
+                                v = norm(*f.dst)
+                                emit({"type": "entity", "entity": {"type": f.dst[0], "value": v, "type_label": i18n.label("type", f.dst[0], lang()),
+                                                                   "label": i18n.label_value(v, lang()) if f.dst[0] in ("Servizio", "Data") else v}, "via": c.name})
                             if _follow(f, depth, max_depth, db, inv, max_entities):
                                 level.append((f.dst[0], norm(*f.dst), depth + 1))
             except asyncio.CancelledError:

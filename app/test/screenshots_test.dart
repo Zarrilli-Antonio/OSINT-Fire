@@ -10,6 +10,7 @@ import 'package:osint_fire/ai_dialog.dart';
 import 'package:osint_fire/api.dart';
 import 'package:osint_fire/backend.dart';
 import 'package:osint_fire/graph_view.dart';
+import 'package:osint_fire/l10n.dart';
 import 'package:osint_fire/main.dart';
 import 'package:osint_fire/settings_dialog.dart';
 import 'package:osint_fire/theme.dart';
@@ -52,7 +53,7 @@ Graph _demo() {
     if (site == 'github') link(a, pers, 'nome_profilo', 0.5, 'nome nel profilo GitHub', 'github_user');
   }
   final loc = add('Luogo', 'Milano, IT');
-  link(pers, loc, 'luogo_dichiarato', 0.4, 'luogo nel profilo', 'github_user');
+  link(pers, loc, 'luogo_dichiarato', 0.4, 'luogo nel profilo GitHub', 'github_user');
   link(dom, add('Servizio', 'Google Workspace'), 'usa_servizio_email', 0.9, 'record SPF include', 'dns_mail');
   link(dom, add('Servizio', 'CA: Let\'s Encrypt'), 'emesso_da', 0.9, 'emittente del certificato', 'tls_cert');
   link(dom, add('Data', 'registrazione: 2014-05-12'), 'evento_dominio', 0.95, 'evento nel registro RDAP', 'rdap');
@@ -60,16 +61,42 @@ Graph _demo() {
   link(mail, add('Chiave PGP', '6AFDDB6B447170715E61'), 'chiave_pgp', 0.8, 'chiave pubblica su keyserver', 'pgp_keyserver');
   link(org, add('Telefono', '+390212345678'), 'telefono_sul_sito', 0.8, 'schema.org telephone', 'web_page');
   for (final b in ['ExampleForum 2016', 'DemoShop 2019', 'SampleCloud 2021']) {
-    link(mail, add('Breach', b), 'presente_in_breach', 0.7, 'database di breach pubblico', 'xposedornot');
+    link(mail, add('Breach', b), 'presente_in_breach', 0.7, 'indicata in database di breach pubblico', 'xposedornot');
   }
-  final ev = add('Evento', 'Incontro del 12 maggio', manual: true);
+  final ev = add('Evento', 'Meeting on 12 May', manual: true);
   link(pers, ev, 'ha partecipato a', 1, 'aggiunto manualmente', 'manuale', manual: true);
 
-  final notes = {pers.id: GNote('Titolare dell\'azienda: verificare le altre società collegate.', true)};
+  final notes = {pers.id: GNote('Owner of the company: check the other related companies.', true)};
   final hidden = {n.firstWhere((x) => x.value == 'vpn.acme-demo.test').id, n.firstWhere((x) => x.value == '203.0.113.12').id};
   final links = [GLink(1, user.id, mail.id, 0.6, ['parte locale email uguale all\'username'], 'review'), GLink(2, pers.id, org.id, 0.78, ['stesso nome persona', 'stessa azienda'], 'auto')];
-  return Graph(n, e, links, notes, hidden);
+  return _english(Graph(n, e, links, notes, hidden));
 }
+
+// What the backend sends as display labels when the language is English (the stored names stay Italian).
+const _types = {'Dominio': 'Domain', 'Persona': 'Person', 'Azienda': 'Company', 'Luogo': 'Place', 'Telefono': 'Phone', 'Evento': 'Event', 'Servizio': 'Service', 'Data': 'Date', 'ID tracciamento': 'Tracking ID', 'Chiave PGP': 'PGP key'};
+const _rels = {
+  'usa_tracciamento': 'uses tracking', 'chiave_pgp': 'PGP key', 'organizzazione_certificato': 'organisation in the certificate', 'dominio_email': 'email domain', 'presente_in_breach': 'present in breach',
+  'risolve_a': 'resolves to', 'usa_servizio_email': 'uses email service', 'emesso_da': 'issued by', 'evento_dominio': 'domain event', 'ha partecipato a': 'took part in', 'telefono_sul_sito': 'phone on the website',
+  'possibile_username': 'possible username', 'intestata_a': 'registered to', 'sottodominio': 'subdomain', 'luogo_dichiarato': 'declared place', 'nome_profilo': 'profile name',
+};
+const _why = {
+  'parte dopo @': 'part after @', "parte locale dell'indirizzo": 'local part of the address', 'certificato TLS pubblico': 'public TLS certificate', 'evento nel registro RDAP': 'event in the RDAP registry',
+  'identificativo nel codice della pagina': 'identifier in the page code', 'chiave pubblica su keyserver': 'public key on a keyserver', 'indicata in database di breach pubblico': 'listed in a public breach database',
+  'nome nel profilo GitHub': 'name in the GitHub profile', 'record SPF include': 'SPF include record', 'campo O del certificato TLS': 'O field of the TLS certificate', 'aggiunto manualmente': 'added manually',
+  'record DNS A': 'DNS A record', 'nome nel profilo Gravatar': 'name in the Gravatar profile', 'emittente del certificato': 'certificate issuer', 'luogo nel profilo GitHub': 'place in the GitHub profile',
+  'schema.org telephone': 'schema.org telephone', "parte locale email uguale all'username": 'email local part equals the username', 'stesso nome persona': 'same person name', 'stessa azienda': 'same company',
+};
+
+String _w(String s) => _why[s] ?? (s.startsWith('profilo su ') ? 'profile on ${s.substring(11)}' : s);
+
+Graph _english(Graph g) => Graph(
+      [for (final x in g.nodes) GNode(x.id, x.type, x.value, x.members, x.added, x.manual, x.memberIds, x.value.startsWith('registrazione: ') ? 'registered: ${x.value.substring(15)}' : null)],
+      [for (final x in g.edges) GEdge(x.src, x.dst, x.rel, x.conf, x.reason, x.collector, x.url, x.id, x.manual, _rels[x.rel] ?? x.rel, _w(x.reason))],
+      [for (final l in g.links) GLink(l.id, l.a, l.b, l.score, l.signals, l.status, [for (final x in l.signals) _w(x)])],
+      g.notes,
+      g.hidden,
+      {for (final x in g.nodes) x.type: _types[x.type] ?? x.type},
+    );
 
 Settings _settings() => Settings({
       'default_depth': 2, 'default_max_entities': 300, 'cache_ttl_hours': 24, 'fetch_avatars': true, 'passive_only': false,
@@ -124,13 +151,16 @@ Future<void> _shoot(WidgetTester tester, Widget home, String file, {Size size = 
 }
 
 void main() {
-  setUpAll(_fonts);
+  setUpAll(() {
+    appLang.value = 'en';
+    return _fonts();
+  });
   final skip = _on ? null : 'set SCREENSHOTS=1 to regenerate the README pictures';
 
   testWidgets('graph with detail panel', (tester) async {
     await _shoot(tester, Home(autostart: false, initialGraph: _demo(), initialInv: 1, initialName: 'Acme Demo', initialSeeds: const [('Username', 'mrossi_demo'), ('Dominio', 'acme-demo.test')], backendReadyForTests: true), 'graph.png');
     // pick a node the way a user would, then frame everything
-    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.hintText == 'cerca nel grafo (⌘/Ctrl+F)'), 'Mario Rossi');
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.hintText == 'search the graph (⌘/Ctrl+F)'), 'Mario Rossi');
     await tester.pump();
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
@@ -142,7 +172,7 @@ void main() {
 
   testWidgets('split view with and without hidden nodes', (tester) async {
     await _shoot(tester, Home(autostart: false, initialGraph: _demo(), initialInv: 1, initialName: 'Acme Demo', initialSeeds: const [('Username', 'mrossi_demo'), ('Dominio', 'acme-demo.test')], backendReadyForTests: true), 'tmp.png');
-    await tester.tap(find.text('AFFIANCATE'));
+    await tester.tap(find.text('SIDE BY SIDE'));
     for (var i = 0; i < 300; i++) {
       await tester.pump(const Duration(milliseconds: 16));
     }
@@ -160,7 +190,7 @@ void main() {
         '• Debole (0.40): lo username mrossi_demo [1] coincide con la parte locale dell\'email [2], ma è un\'ipotesi: va verificata.\n'
         '• Esposizione: 3 breach pubblici sull\'indirizzo email; il servizio di posta è Google Workspace.\n\n'
         'Lacune: nessun profilo LinkedIn trovato e nessun dato sul telefono +390212345678 [oltre al prefisso].',
-        [AiPivot('Persona', 'Mario Rossi', 'Titolare dell\'azienda: cercare altre società collegate'), AiPivot('Dominio', 'shop.acme-demo.test', 'Sottodominio con un negozio online, ancora non analizzato')]);
+        [AiPivot('Persona', 'Mario Rossi', 'Owner of the company: look for other related companies'), AiPivot('Dominio', 'shop.acme-demo.test', 'Subdomain with an online shop, not analysed yet')]);
     await _shoot(tester, AiDialog(inv: 1, initialStatus: AiStatus(true, '', 'anthropic', 'claude-sonnet-5-5'), initialResult: result, initialTask: 'summary'), 'ai.png', size: const Size(1100, 800));
   }, skip: skip != null);
 }

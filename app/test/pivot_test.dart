@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:osint_fire/pivot_links.dart';
+import 'package:osint_fire/l10n.dart';
 
 void main() {
+  setUpAll(() => appLang.value = 'it');
   test('every searchable type has links, all http(s), values are encoded', () {
     for (final t in ['Dominio', 'IP', 'Email', 'Username', 'Persona', 'Azienda', 'Telefono', 'Account']) {
       final l = pivotLinks(t, t == 'Account' ? 'https://github.com/x' : 'a b&c@d.com');

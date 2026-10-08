@@ -8,6 +8,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:http/http.dart' as http;
 
 import 'api.dart';
+import 'l10n.dart';
 import 'theme.dart';
 
 /// Interactive force-directed graph: drag nodes (they stay pinned), drag background to pan, scroll/pinch to zoom,
@@ -343,6 +344,7 @@ class GraphViewState extends State<GraphView> with SingleTickerProviderStateMixi
 
   @override
   Widget build(BuildContext context) {
+    LangScope.watch(context);
     final counts = <String, int>{};
     for (final n in widget.graph.nodes) {
       counts[n.type] = (counts[n.type] ?? 0) + 1;
@@ -449,7 +451,7 @@ class GraphViewState extends State<GraphView> with SingleTickerProviderStateMixi
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text('${e.key}  ${e.value}',
+                    Text('${widget.graph.typeName(e.key)}  ${e.value}',
                         style: TextStyle(
                             fontSize: 10,
                             color: hidden.contains(e.key) ? const Color(0x558A8A92) : dim,
@@ -459,9 +461,9 @@ class GraphViewState extends State<GraphView> with SingleTickerProviderStateMixi
               ),
             if (counts.isNotEmpty) ...[
               const SizedBox(height: 6),
-              const IgnorePointer(
-                child: Text('clic sulla legenda = mostra/nascondi · trascina i nodi · doppio clic = sblocca',
-                    style: TextStyle(fontSize: 10, color: Color(0x668A8A92))),
+              IgnorePointer(
+                child: Text(t('click the legend = show/hide · drag nodes · double click = unpin'),
+                    style: const TextStyle(fontSize: 10, color: Color(0x668A8A92))),
               ),
             ],
           ]),
@@ -470,22 +472,22 @@ class GraphViewState extends State<GraphView> with SingleTickerProviderStateMixi
           right: 16,
           bottom: 14,
           child: Column(children: [
-            if (widget.onAddNode != null) _Btn(Icons.add_circle_outline, 'Aggiungi un nodo', widget.onAddNode!),
-            if (widget.onToggleLink != null) _Btn(Icons.share_outlined, widget.linkMode ? 'Annulla il collegamento' : 'Crea un ponte tra due nodi', widget.onToggleLink!, active: widget.linkMode),
+            if (widget.onAddNode != null) _Btn(Icons.add_circle_outline, t('Add a node'), widget.onAddNode!),
+            if (widget.onToggleLink != null) _Btn(Icons.share_outlined, widget.linkMode ? t('Cancel the link') : t('Create a bridge between two nodes'), widget.onToggleLink!, active: widget.linkMode),
             if (widget.onAddNode != null || widget.onToggleLink != null) const SizedBox(height: 10),
-            _Btn(Icons.add, 'Zoom +', () {
+            _Btn(Icons.add, t('Zoom +'), () {
               _zoomAt(size.center(Offset.zero), 1.25);
               repaint.value++;
             }),
-            _Btn(Icons.remove, 'Zoom −', () {
+            _Btn(Icons.remove, t('Zoom −'), () {
               _zoomAt(size.center(Offset.zero), 0.8);
               repaint.value++;
             }),
-            _Btn(Icons.center_focus_strong_outlined, 'Inquadra tutto', () {
+            _Btn(Icons.center_focus_strong_outlined, t('Fit all'), () {
               fit();
               _scheduleSave();
             }),
-            _Btn(Icons.lock_open, 'Sblocca tutti i nodi', () {
+            _Btn(Icons.lock_open, t('Unpin all nodes'), () {
               pinned.clear();
               _heat(300);
               _scheduleSave();
@@ -551,7 +553,7 @@ class _Painter extends CustomPainter {
                   : fg.withValues(alpha: faded ? 0.03 : (focus == null ? 0.08 + 0.28 * e.conf : 0.04))
           ..strokeWidth = hot ? 1.4 : (e.manual ? 1.8 : 0.6 + e.conf),
       );
-      if (e.manual && !faded && s.scale >= 0.6 && (focus == null || hot)) _edgeLabel(canvas, a, b, e.rel);
+      if (e.manual && !faded && s.scale >= 0.6 && (focus == null || hot)) _edgeLabel(canvas, a, b, e.relLabel);
     }
     for (final l in g.links) {
       final a = at(l.a), b = at(l.b);
@@ -620,7 +622,7 @@ class _Painter extends CustomPainter {
     for (final (p, n, r) in labels) {
       final tp = TextPainter(
         text: TextSpan(
-          text: n.value.replaceFirst(RegExp(r'^https?://(www\.)?'), ''),
+          text: n.label.replaceFirst(RegExp(r'^https?://(www\.)?'), ''),
           style: TextStyle(
             color: fg.withValues(alpha: n.id == focus ? 1 : 0.8),
             fontSize: 10,

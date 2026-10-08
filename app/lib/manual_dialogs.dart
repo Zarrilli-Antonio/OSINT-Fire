@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
 
+import 'l10n.dart';
 import 'theme.dart';
 
+// canonical (stored) type names; shown through typeLabel()
 const nodeTypes = ['Persona', 'Azienda', 'Email', 'Username', 'Dominio', 'IP', 'Telefono', 'Account', 'Luogo', 'Evento', 'Oggetto', 'Documento', 'Nota'];
-const bridgeLabels = ['collegato a', 'stessa persona', 'lavora per', 'possiede', 'familiare di', 'contatto di', 'usa', 'sospetto legato a', 'si trova a'];
+// English source strings of the suggested relation names; shown through t(), stored as typed
+const bridgeLabels = ['linked to', 'same person', 'works for', 'owns', 'family member of', 'contact of', 'uses', 'suspected link to', 'located in'];
 
-Widget _chips(List<String> items, String current, void Function(String) onTap) => Wrap(spacing: 6, runSpacing: 6, children: [
-      for (final t in items)
+/// Suggestion chips: [items] are (value, shown text); [current] is compared with the value.
+Widget _chips(List<(String, String)> items, String current, void Function(String) onTap) => Wrap(spacing: 6, runSpacing: 6, children: [
+      for (final (v, shown) in items)
         InkWell(
-          onTap: () => onTap(t),
+          onTap: () => onTap(v),
           borderRadius: BorderRadius.circular(4),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              border: Border.all(color: t == current ? accent : line),
+              border: Border.all(color: v == current ? accent : line),
               borderRadius: BorderRadius.circular(4),
-              color: t == current ? accent.withValues(alpha: 0.15) : null,
+              color: v == current ? accent.withValues(alpha: 0.15) : null,
             ),
-            child: Text(t, style: TextStyle(fontSize: 11, color: t == current ? fg : dim)),
+            child: Text(shown, style: TextStyle(fontSize: 11, color: v == current ? fg : dim)),
           ),
         ),
     ]);
@@ -33,7 +37,7 @@ class NodeDialog extends StatefulWidget {
 }
 
 class _NodeDialogState extends State<NodeDialog> {
-  late final type = TextEditingController(text: widget.type ?? 'Persona');
+  late final type = TextEditingController(text: typeLabel(widget.type ?? 'Persona'));
   late final value = TextEditingController(text: widget.value ?? '');
 
   @override
@@ -47,31 +51,31 @@ class _NodeDialogState extends State<NodeDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-        title: Text(widget.editing ? 'Modifica nodo' : 'Nuovo nodo', style: const TextStyle(fontSize: 14)),
+        title: Text(widget.editing ? t('Edit node') : t('New node'), style: const TextStyle(fontSize: 14)),
         content: SizedBox(
           width: 440,
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('TIPO', style: TextStyle(fontSize: 10, letterSpacing: 1.5, color: dim)),
-            TextField(controller: type, onChanged: (_) => setState(() {}), decoration: const InputDecoration(hintText: 'scegli o scrivi il tuo')),
+            Text(t('TYPE'), style: TextStyle(fontSize: 10, letterSpacing: 1.5, color: dim)),
+            TextField(controller: type, onChanged: (_) => setState(() {}), decoration: InputDecoration(hintText: t('pick one or type your own'))),
             const SizedBox(height: 8),
-            _chips(nodeTypes, type.text.trim(), (t) => setState(() => type.text = t)),
+            _chips([for (final c in nodeTypes) (c, typeLabel(c))], typeKey(type.text), (c) => setState(() => type.text = typeLabel(c))),
             const SizedBox(height: 16),
-            const Text('VALORE', style: TextStyle(fontSize: 10, letterSpacing: 1.5, color: dim)),
+            Text(t('VALUE'), style: TextStyle(fontSize: 10, letterSpacing: 1.5, color: dim)),
             TextField(
               controller: value,
               autofocus: true,
               onChanged: (_) => setState(() {}),
-              onSubmitted: (_) => ok ? Navigator.pop(context, (type.text.trim(), value.text.trim())) : null,
-              decoration: const InputDecoration(hintText: 'nome, indirizzo, descrizione…'),
+              onSubmitted: (_) => ok ? Navigator.pop(context, (typeKey(type.text), value.text.trim())) : null,
+              decoration: InputDecoration(hintText: t('name, address, description…')),
             ),
             const SizedBox(height: 10),
-            const Text('Un nodo creato a mano si riconosce dal rombo dorato. Puoi collegarlo, annotarlo, nasconderlo, modificarlo o eliminarlo.',
+            Text(t('A hand-made node is marked by a golden diamond. You can link, annotate, hide, edit or delete it.'),
                 style: TextStyle(fontSize: 11, color: dim, height: 1.4)),
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annulla')),
-          FilledButton(onPressed: ok ? () => Navigator.pop(context, (type.text.trim(), value.text.trim())) : null, child: Text(widget.editing ? 'SALVA' : 'CREA')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(t('Cancel'))),
+          FilledButton(onPressed: ok ? () => Navigator.pop(context, (typeKey(type.text), value.text.trim())) : null, child: Text(widget.editing ? t('SAVE') : t('CREATE'))),
         ],
       );
 }
@@ -86,7 +90,7 @@ class BridgeDialog extends StatefulWidget {
 }
 
 class _BridgeDialogState extends State<BridgeDialog> {
-  final label = TextEditingController(text: 'collegato a');
+  final label = TextEditingController(text: t('linked to'));
   final reason = TextEditingController();
 
   @override
@@ -98,24 +102,24 @@ class _BridgeDialogState extends State<BridgeDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-        title: const Text('Nuovo ponte', style: TextStyle(fontSize: 14)),
+        title: Text(t('New bridge'), style: TextStyle(fontSize: 14)),
         content: SizedBox(
           width: 460,
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('${widget.from}  →  ${widget.to}', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
             const SizedBox(height: 14),
-            const Text('RELAZIONE', style: TextStyle(fontSize: 10, letterSpacing: 1.5, color: dim)),
-            TextField(controller: label, autofocus: true, onChanged: (_) => setState(() {}), decoration: const InputDecoration(hintText: 'per esempio: lavora per')),
+            Text(t('RELATION'), style: TextStyle(fontSize: 10, letterSpacing: 1.5, color: dim)),
+            TextField(controller: label, autofocus: true, onChanged: (_) => setState(() {}), decoration: InputDecoration(hintText: t('for example: works for'))),
             const SizedBox(height: 8),
-            _chips(bridgeLabels, label.text.trim(), (t) => setState(() => label.text = t)),
+            _chips([for (final b in bridgeLabels) (t(b), t(b))], label.text.trim(), (b) => setState(() => label.text = b)),
             const SizedBox(height: 14),
-            const Text('NOTA (FACOLTATIVA)', style: TextStyle(fontSize: 10, letterSpacing: 1.5, color: dim)),
-            TextField(controller: reason, decoration: const InputDecoration(hintText: 'perché li colleghi')),
+            Text(t('NOTE (OPTIONAL)'), style: TextStyle(fontSize: 10, letterSpacing: 1.5, color: dim)),
+            TextField(controller: reason, decoration: InputDecoration(hintText: t('why you link them'))),
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annulla')),
-          FilledButton(onPressed: label.text.trim().isEmpty ? null : () => Navigator.pop(context, (label.text.trim(), reason.text.trim())), child: const Text('CREA PONTE')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(t('Cancel'))),
+          FilledButton(onPressed: label.text.trim().isEmpty ? null : () => Navigator.pop(context, (label.text.trim(), reason.text.trim())), child: Text(t('CREATE BRIDGE'))),
         ],
       );
 }

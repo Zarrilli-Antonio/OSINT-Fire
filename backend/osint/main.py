@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from . import collectors
 from .db import DB
-from . import ai, connections, reports, settings
+from . import ai, connections, i18n, reports, settings
 from .db import without_hidden
 from .export import to_graphml
 from .paths import db_path
@@ -68,7 +68,7 @@ async def test_connection(provider: str):
     try:
         ok, message = await connections.test(provider)
     except KeyError:
-        raise HTTPException(404, "provider sconosciuto")
+        raise HTTPException(404, "unknown provider")
     return {"ok": ok, "message": message}
 
 
@@ -106,8 +106,8 @@ class Wipe(BaseModel):
 @app.post("/maintenance/wipe")
 def maintenance_wipe(body: Wipe):
     """Delete every investigation and all derived data. Settings are kept. Needs the literal confirmation word."""
-    if body.confirm != "ELIMINA":
-        raise HTTPException(422, "conferma mancante")
+    if body.confirm not in ("ELIMINA", "DELETE", "ELIMINAR", "LÖSCHEN"):  # the word the UI asks for, in each language
+        raise HTTPException(422, "confirmation missing")
     for t in list(tasks.values()):
         t.cancel()
     tasks.clear()
@@ -153,7 +153,7 @@ def inv_status(inv: int):
 async def create(body: NewInvestigation):
     bad = [s.type for s in body.seeds if s.type not in SEED_TYPES]
     if bad:
-        raise HTTPException(422, f"tipo seed non supportato: {bad}")
+        raise HTTPException(422, f"unsupported seed type: {bad}")
     seeds = [{"type": s.type, "value": s.value} for s in body.seeds]
     inv = db.new_investigation(body.name.strip(), body.purpose.strip(), seeds, body.max_depth, body.max_entities)
     db.log_run(inv, "create", seeds, body.max_depth)
@@ -208,7 +208,7 @@ def export(inv: int, format: str = "json", include_hidden: bool = False):
             return {"files": reports.obsidian(g, meta)}
         case "json":
             return g
-    raise HTTPException(422, "formato: json|graphml|md|pdf|obsidian")
+    raise HTTPException(422, "format: json|graphml|md|pdf|obsidian")
 
 
 class Expand(BaseModel):
@@ -223,10 +223,10 @@ async def expand(inv: int, body: Expand):
     if not db.get_investigation(inv):
         raise HTTPException(404)
     if (t := tasks.get(inv)) and not t.done():
-        raise HTTPException(409, "ricerca già in corso su questa indagine")
+        raise HTTPException(409, "a search is already running on this investigation")
     bad = [s.type for s in body.seeds if s.type not in SEED_TYPES]
     if bad:
-        raise HTTPException(422, f"tipo seed non supportato: {bad}")
+        raise HTTPException(422, f"unsupported seed type: {bad}")
     db.log_run(inv, "expand", [{"type": s.type, "value": s.value} for s in body.seeds], body.max_depth)
     events[inv] = []  # fresh stream: the previous one already ended with "done"
     tasks[inv] = asyncio.create_task(investigate(db, inv, [(s.type, s.value) for s in body.seeds], body.max_depth,
@@ -283,12 +283,12 @@ async def refresh(inv: int, body: Refresh | None = None):
     if not db.get_investigation(inv):
         raise HTTPException(404)
     if (t := tasks.get(inv)) and not t.done():
-        raise HTTPException(409, "ricerca già in corso su questa indagine")
+        raise HTTPException(409, "a search is already running on this investigation")
     body = body or Refresh()
     if body.seeds is not None:
         bad = [s.type for s in body.seeds if s.type not in SEED_TYPES]
         if bad:
-            raise HTTPException(422, f"tipo seed non supportato: {bad}")
+            raise HTTPException(422, f"unsupported seed type: {bad}")
     db.update_investigation(inv, name=body.name and body.name.strip(), purpose=body.purpose and body.purpose.strip() if body.purpose is not None else None,
                             seeds=[{"type": s.type, "value": s.value} for s in body.seeds] if body.seeds else None,
                             max_depth=body.max_depth, max_entities=body.max_entities)
@@ -329,9 +329,9 @@ class EntityEdit(BaseModel):
 def edit_entity(inv: int, eid: int, body: EntityEdit):
     res = db.update_manual_entity(inv, eid, _clean(body.type) if body.type else None, _clean(body.value) if body.value else None)
     if res == "missing":
-        raise HTTPException(404, "nodo non trovato o non creato a mano")
+        raise HTTPException(404, "node not found or not created by hand")
     if res == "duplicate":
-        raise HTTPException(409, "esiste già un nodo con questo tipo e valore")
+        raise HTTPException(409, "a node with this type and value already exists")
     return {"ok": True}
 
 
@@ -348,7 +348,7 @@ def delete_entities(inv: int, body: DeleteEntities):
         raise HTTPException(404)
     n, hidden = db.delete_entities(inv, body.ids, body.cascade)
     if n == 0:
-        raise HTTPException(404, "nessun nodo trovato")
+        raise HTTPException(404, "no node found")
     return {"deleted": n, "hidden": hidden}
 
 
@@ -356,7 +356,7 @@ def delete_entities(inv: int, body: DeleteEntities):
 def delete_entity(inv: int, eid: int, cascade: bool = True):
     n, hidden = db.delete_entities(inv, [eid], cascade)
     if n == 0:
-        raise HTTPException(404, "nodo non trovato")
+        raise HTTPException(404, "node not found")
     return {"ok": True, "hidden": hidden}
 
 
@@ -372,14 +372,14 @@ def create_relation(inv: int, body: NewRelation):
     """A bridge between two nodes of the investigation, with a label you choose."""
     r = db.add_manual_relation(inv, body.src, body.dst, _clean(body.rel), body.reason.strip())
     if r is None:
-        raise HTTPException(422, "i due nodi devono essere diversi e appartenere a questa indagine")
+        raise HTTPException(422, "the two nodes must be different and belong to this investigation")
     return {"id": r[0], "created": r[1]}
 
 
 @app.delete("/investigations/{inv}/relations/{rid}")
 def delete_relation(inv: int, rid: int):
     if not db.delete_manual_relation(inv, rid):
-        raise HTTPException(404, "ponte non trovato o non creato a mano")
+        raise HTTPException(404, "bridge not found or not created by hand")
     return {"ok": True}
 
 
@@ -428,7 +428,8 @@ def get_layout(inv: int):
 
 @app.get("/investigations/{inv}/graph")
 def graph(inv: int):
-    return db.graph(inv)
+    """Canonical data (identities and logic) plus display labels in the interface language."""
+    return i18n.localize_graph(db.graph(inv), settings.lang())
 
 
 class Decision(BaseModel):

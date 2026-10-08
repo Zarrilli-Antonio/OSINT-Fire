@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'ai_dialog.dart';
 import 'api.dart';
 import 'backend.dart';
+import 'l10n.dart';
 import 'graph_view.dart';
 import 'manual_dialogs.dart';
 import 'note_editor.dart';
@@ -16,18 +17,23 @@ import 'platform.dart';
 import 'settings_dialog.dart';
 import 'theme.dart';
 
+final homeKey = GlobalKey<State<Home>>();
+
 void main() => runApp(const App());
 
 class App extends StatelessWidget {
   const App({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-        title: 'OSINT-Fire',
-        debugShowCheckedModeBanner: false,
-        theme: buildTheme(),
-        builder: (context, child) => Backdrop(child: child!),
-        home: const Home(),
+  Widget build(BuildContext context) => ValueListenableBuilder<String>(
+        valueListenable: appLang,
+        builder: (context, lang, _) => MaterialApp(
+          title: 'OSINT-Fire',
+          debugShowCheckedModeBanner: false,
+          theme: buildTheme(),
+          builder: (context, child) => LangScope(notifier: appLang, child: Backdrop(child: child!)),
+          home: Home(key: homeKey), // not const: a new instance makes the whole screen rebuild in the new language
+        ),
       );
 }
 
@@ -80,8 +86,10 @@ class _HomeState extends State<Home> {
   /// Pull the user's settings and apply the ones the UI uses (default depth, grouping threshold).
   Future<void> _loadSettings() async {
     try {
-      final st = await fetchSettings();
+      var st = await fetchSettings();
       if (!mounted) return;
+      if (st.strOf('language').isEmpty) st = await saveSettings({'language': appLang.value}); // first run: keep the system language
+      appLang.value = st.strOf('language');
       setState(() {
         settings = st;
         groupMin = st.intOf('group_min');
@@ -103,6 +111,8 @@ class _HomeState extends State<Home> {
           graph = Graph([], []);
           selected = null;
         });
+      } else if (inv != null && mounted) {
+        await _reloadGraph(); // labels come from the server in the chosen language
       }
     }
   }
@@ -180,7 +190,7 @@ class _HomeState extends State<Home> {
   Future<void> start() async {
     _addSeed();
     if (seeds.isEmpty || name.text.trim().isEmpty) {
-      setState(() => log.insert(0, 'Servono un nome e almeno un seed'));
+      setState(() => log.insert(0, t('A name and at least one seed are required')));
       return;
     }
     setState(() {
@@ -198,7 +208,7 @@ class _HomeState extends State<Home> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          log.insert(0, 'Errore: $e (backend avviato su $baseUrl?)');
+          log.insert(0, t('Error: {0} (is the backend running on {1}?)', [e, baseUrl]));
           running = false;
         });
       }
@@ -211,12 +221,12 @@ class _HomeState extends State<Home> {
     if (inv == null || !running || stopping) return;
     setState(() {
       stopping = true;
-      log.insert(0, 'Interruzione richiesta…');
+      log.insert(0, t('Stop requested…'));
     });
     try {
       await stopInvestigation(inv!);
     } catch (e) {
-      if (mounted) setState(() => log.insert(0, 'Errore: $e'));
+      if (mounted) setState(() => log.insert(0, t('Error: {0}', [e])));
     } finally {
       if (mounted) setState(() => stopping = false);
     }
@@ -228,14 +238,14 @@ class _HomeState extends State<Home> {
     sinceTs = DateTime.now().millisecondsSinceEpoch / 1000 - 1;
     setState(() {
       running = true;
-      log.insert(0, '↳ espansione da ${target.$1} · ${target.$2} (profondità $d)');
+      log.insert(0, t('↳ expanding from {0} · {1} (depth {2})', [graph.typeName(target.$1), target.$2, d]));
     });
     try {
       await expandInvestigation(inv!, [target], d, maxEntities: _maxEntities);
     } catch (e) {
       if (mounted) {
         setState(() {
-          log.insert(0, 'Errore: $e');
+          log.insert(0, t('Error: {0}', [e]));
           running = false;
         });
       }
@@ -272,7 +282,7 @@ class _HomeState extends State<Home> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => log.insert(0, 'Errore: $e (backend avviato su $baseUrl?)'));
+      if (mounted) setState(() => log.insert(0, t('Error: {0} (is the backend running on {1}?)', [e, baseUrl])));
     } finally {
       if (mounted) setState(() => running = false);
     }
@@ -312,7 +322,7 @@ class _HomeState extends State<Home> {
     bool has(String? s) => s != null && s.toLowerCase().contains(q);
     return {
       for (final n in graph.nodes)
-        if (has(n.value) || has(n.type) || n.members.any(has) || has(graph.notes[n.id]?.text)) n.id
+        if (has(n.value) || has(n.label) || has(n.type) || has(graph.typeName(n.type)) || n.members.any(has) || has(graph.notes[n.id]?.text)) n.id
     };
   }
 
@@ -353,7 +363,7 @@ class _HomeState extends State<Home> {
     try {
       await saveNote(inv!, n.id, next.text, next.starred);
     } catch (e) {
-      if (mounted) setState(() => log.insert(0, 'Errore nota: $e'));
+      if (mounted) setState(() => log.insert(0, t('Error, note: {0}', [e])));
     }
   }
 
@@ -379,7 +389,7 @@ class _HomeState extends State<Home> {
       final changed = await setHidden(inv!, list, hide);
       if (mounted) apply(changed);
     } catch (e) {
-      if (mounted) setState(() => log.insert(0, 'Errore: $e'));
+      if (mounted) setState(() => log.insert(0, t('Error: {0}', [e])));
     }
   }
 
@@ -400,11 +410,11 @@ class _HomeState extends State<Home> {
     try {
       final (id, created) = await createEntity(inv!, r.$1, r.$2);
       await _reloadGraph();
-      if (mounted) setState(() => log.insert(0, created ? '+ nodo creato: ${r.$1} · ${r.$2}' : 'Esisteva già: ${r.$1} · ${r.$2}'));
+      if (mounted) setState(() => log.insert(0, created ? t('+ node created: {0} · {1}', [typeLabel(r.$1), r.$2]) : t('Already existed: {0} · {1}', [typeLabel(r.$1), r.$2])));
       final n = graph.nodes.where((x) => x.id == id).firstOrNull;
       if (n != null) _select(n);
     } catch (e) {
-      if (mounted) setState(() => log.insert(0, 'Errore: ${e.toString().replaceFirst('Exception: ', '')}'));
+      if (mounted) setState(() => log.insert(0, t('Error: {0}', [e.toString().replaceFirst('Exception: ', '')])));
     }
   }
 
@@ -415,7 +425,7 @@ class _HomeState extends State<Home> {
       await updateEntity(inv!, n.id, type: r.$1, value: r.$2);
       await _reloadGraph();
     } catch (e) {
-      if (mounted) setState(() => log.insert(0, 'Errore: ${e.toString().replaceFirst('Exception: ', '')}'));
+      if (mounted) setState(() => log.insert(0, t('Error: {0}', [e.toString().replaceFirst('Exception: ', '')])));
     }
   }
 
@@ -423,20 +433,20 @@ class _HomeState extends State<Home> {
     if (inv == null) return;
     final ids = _idsOf(n);
     final detail = n.members.isNotEmpty
-        ? 'Vengono eliminati i ${ids.length} nodi del gruppo con i loro collegamenti. I dati che partivano solo da loro vengono nascosti (potrai rimostrarli). Un aggiornamento non li ricreerà.'
+        ? t('The {0} nodes of the group are deleted along with their links. Data that came only from them is hidden (you can show it again). An update will not recreate them.', [ids.length])
         : n.manual
-            ? 'Vengono eliminati anche i ponti che lo collegano e le sue note. I dati che partivano solo da lui vengono nascosti (potrai rimostrarli).'
-            : 'Il nodo e i suoi collegamenti vengono eliminati e un aggiornamento non lo ricreerà. I dati che partivano solo da lui vengono nascosti (potrai rimostrarli).';
-    if (!await _confirmDelete(context, n.value, what: n.members.isNotEmpty ? 'il gruppo' : 'il nodo', detail: detail)) return;
+            ? t('The bridges that connect it and its notes are deleted too. Data that came only from it is hidden (you can show it again).')
+            : t('The node and its links are deleted and an update will not recreate it. Data that came only from it is hidden (you can show it again).');
+    if (!await _confirmDelete(context, n.label, title: n.members.isNotEmpty ? t('Delete group «{0}»?', [n.label]) : t('Delete node «{0}»?', [n.label]), detail: detail)) return;
     try {
       final (deleted, hidden) = await deleteEntities(inv!, ids);
       setState(() {
         selected = null;
-        log.insert(0, '✕ eliminati $deleted nodi${hidden.isEmpty ? '' : ', nascosti ${hidden.length} che ne dipendevano'}');
+        log.insert(0, hidden.isEmpty ? t('✕ deleted {0} nodes', [deleted]) : t('✕ deleted {0} nodes, hid {1} that depended on them', [deleted, hidden.length]));
       });
       await _reloadGraph();
     } catch (e) {
-      if (mounted) setState(() => log.insert(0, 'Errore: ${e.toString().replaceFirst('Exception: ', '')}'));
+      if (mounted) setState(() => log.insert(0, t('Error: {0}', [e.toString().replaceFirst('Exception: ', '')])));
     }
   }
 
@@ -446,7 +456,7 @@ class _HomeState extends State<Home> {
       await deleteRelation(inv!, e.id);
       await _reloadGraph();
     } catch (err) {
-      if (mounted) setState(() => log.insert(0, 'Errore: ${err.toString().replaceFirst('Exception: ', '')}'));
+      if (mounted) setState(() => log.insert(0, t('Error: {0}', [err.toString().replaceFirst('Exception: ', '')])));
     }
   }
 
@@ -474,7 +484,7 @@ class _HomeState extends State<Home> {
 
   Future<void> _pickLinkEnd(GNode n) async {
     if (n.id <= 0) {
-      setState(() => log.insert(0, 'Un gruppo non si può collegare: spegni «raggruppa» per scegliere un nodo singolo'));
+      setState(() => log.insert(0, t('A group cannot be linked: turn off «group» to pick a single node')));
       return;
     }
     final from = linkFrom;
@@ -491,9 +501,9 @@ class _HomeState extends State<Home> {
     try {
       await createRelation(inv!, from.id, n.id, r.$1, reason: r.$2);
       await _reloadGraph();
-      if (mounted) setState(() => log.insert(0, '+ ponte: ${from.value} —${r.$1}→ ${n.value}'));
+      if (mounted) setState(() => log.insert(0, t('+ bridge: {0} —{1}→ {2}', [from.label, r.$1, n.label])));
     } catch (e) {
-      if (mounted) setState(() => log.insert(0, 'Errore: ${e.toString().replaceFirst('Exception: ', '')}'));
+      if (mounted) setState(() => log.insert(0, t('Error: {0}', [e.toString().replaceFirst('Exception: ', '')])));
     }
     if (mounted) {
       setState(() {
@@ -507,14 +517,14 @@ class _HomeState extends State<Home> {
   /// A map with no search behind it: nodes and bridges are all made by hand.
   Future<void> _createBlank() async {
     if (name.text.trim().isEmpty) {
-      setState(() => log.insert(0, 'Dai un nome alla mappa'));
+      setState(() => log.insert(0, t('Give the map a name')));
       return;
     }
     try {
       final id = await createInvestigation(name: name.text.trim(), purpose: purpose.text.trim(), seeds: const [], maxDepth: depth);
       await _open(id);
     } catch (e) {
-      if (mounted) setState(() => log.insert(0, 'Errore: ${e.toString().replaceFirst('Exception: ', '')}'));
+      if (mounted) setState(() => log.insert(0, t('Error: {0}', [e.toString().replaceFirst('Exception: ', '')])));
     }
   }
 
@@ -527,15 +537,15 @@ class _HomeState extends State<Home> {
     });
   }
 
-  Future<bool> _confirmDelete(BuildContext c, String name, {String what = 'la ricerca', String? detail}) async =>
+  Future<bool> _confirmDelete(BuildContext c, String name, {String? title, String? detail}) async =>
       await showDialog<bool>(
         context: c,
         builder: (d) => AlertDialog(
-          title: Text('Eliminare $what «$name»?'),
-          content: Text(detail ?? 'Grafo, evidenze, immagini e risultati in cache di questa ricerca vengono cancellati. Non si può annullare.'),
+          title: Text(title ?? t('Delete search «{0}»?', [name])),
+          content: Text(detail ?? t('Graph, evidence, images and cached results of this search are deleted. This cannot be undone.')),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Annulla')),
-            FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('Elimina')),
+            TextButton(onPressed: () => Navigator.pop(d, false), child: Text(t('Cancel'))),
+            FilledButton(onPressed: () => Navigator.pop(d, true), child: Text(t('Delete'))),
           ],
         ),
       ) ??
@@ -564,7 +574,7 @@ class _HomeState extends State<Home> {
       depth = d.maxDepth;
       updatedAt = d.updated;
       runCount = d.runs;
-      log.insert(0, 'Caricata «${d.name}» (#$id)');
+      log.insert(0, t('Loaded «{0}» (#{1})', [d.name, id]));
     });
   }
 
@@ -573,19 +583,19 @@ class _HomeState extends State<Home> {
     if (inv == null || running) return;
     _addSeed();
     if (seeds.isEmpty || name.text.trim().isEmpty) {
-      setState(() => log.insert(0, 'Servono un nome e almeno un seed'));
+      setState(() => log.insert(0, t('A name and at least one seed are required')));
       return;
     }
     setState(() {
       running = true;
-      log.insert(0, '↻ aggiornamento di «${name.text.trim()}»');
+      log.insert(0, t('↻ updating «{0}»', [name.text.trim()]));
     });
     try {
       sinceTs = await refreshInvestigation(inv!, name: name.text.trim(), purpose: purpose.text.trim(), seeds: seeds, maxDepth: depth);
     } catch (e) {
       if (mounted) {
         setState(() {
-          log.insert(0, 'Errore: $e');
+          log.insert(0, t('Error: {0}', [e]));
           running = false;
         });
       }
@@ -595,9 +605,7 @@ class _HomeState extends State<Home> {
   }
 
   String _when(double ts) {
-    final d = DateTime.fromMillisecondsSinceEpoch((ts * 1000).round());
-    String two(int x) => x.toString().padLeft(2, '0');
-    return '${two(d.day)}/${two(d.month)}/${d.year} ${two(d.hour)}:${two(d.minute)}';
+    return fmtDateTime(DateTime.fromMillisecondsSinceEpoch((ts * 1000).round()));
   }
 
   Future<void> _export(String fmt) async {
@@ -617,19 +625,19 @@ class _HomeState extends State<Home> {
         done = '$dl${Platform.pathSeparator}osint-$inv.$fmt';
         await File(done).writeAsBytes(await exportBytes(inv!, fmt, includeHidden: viewMode != 'clean'));
       }
-      setState(() => log.insert(0, 'Esportato: $done'));
+      setState(() => log.insert(0, t('Exported: {0}', [done])));
     } catch (e) {
-      setState(() => log.insert(0, 'Errore export: $e'));
+      setState(() => log.insert(0, t('Error, export: {0}', [e])));
     }
   }
 
   String _fmt(Map<String, dynamic> e) => switch (e['type']) {
-        'run' => '${e['collector']} · ${e['target']} · ${e['found']} risultati',
-        'entity' => '+ ${e['entity']['type']} ${e['entity']['value']}',
+        'run' => t('{0} · {1} · {2} results', [e['collector'], e['target'], e['found']]),
+        'entity' => '+ ${e['entity']['type_label'] ?? e['entity']['type']} ${e['entity']['label'] ?? e['entity']['value']}',
         'error' => '✗ ${e['collector']} · ${e['target']}',
         'done' => e['stopped'] == true
-            ? 'Interrotta · risultati parziali salvati'
-            : (e['new'] is int && (e['new'] as int) > 0 ? 'Completato · +${e['new']} nuovi dati' : 'Completato'),
+            ? t('Stopped · partial results saved')
+            : (e['new'] is int && (e['new'] as int) > 0 ? t('Completed · +{0} new items', [e['new']]) : t('Completed')),
         _ => e.toString(),
       };
 
@@ -665,10 +673,10 @@ class _HomeState extends State<Home> {
             Expanded(
               child: Stack(children: [
                 Row(children: [
-                  Expanded(child: _pane(graphKey, graph, sel, hl, ghosts: viewMode == 'clean' ? null : _raw.hidden, title: viewMode == 'split' ? 'CON I NASCOSTI' : null)),
+                  Expanded(child: _pane(graphKey, graph, sel, hl, ghosts: viewMode == 'clean' ? null : _raw.hidden, title: viewMode == 'split' ? t('WITH HIDDEN') : null)),
                   if (viewMode == 'split') ...[
                     const VerticalDivider(width: 1),
-                    Expanded(child: _pane(graphKey2, _view(false), sel, hl, saves: false, title: 'SENZA I NASCOSTI')),
+                    Expanded(child: _pane(graphKey2, _view(false), sel, hl, saves: false, title: t('WITHOUT HIDDEN'))),
                   ],
                 ]),
                 if (graph.nodes.isNotEmpty) Positioned(left: 16, top: 16, width: 280, child: _searchBox(hl)),
@@ -677,7 +685,7 @@ class _HomeState extends State<Home> {
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       Opacity(opacity: 0.85, child: Image.asset('assets/icon.png', width: 110, height: 110)),
                       const SizedBox(height: 18),
-                      const Text('// nessun grafo\n// avvia una ricerca', textAlign: TextAlign.center, style: TextStyle(color: dim, height: 1.8)),
+                      Text(t('// no graph\n// start a search'), textAlign: TextAlign.center, style: TextStyle(color: dim, height: 1.8)),
                     ]),
                   ),
                 if (_raw.hidden.isNotEmpty && graph.nodes.isNotEmpty) Positioned(bottom: 14, left: 0, right: 0, child: Center(child: _viewBar())),
@@ -722,10 +730,10 @@ class _HomeState extends State<Home> {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(6), border: Border.all(color: line)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          for (final (m, label, tip) in const [
-            ('clean', 'PULITA', 'Senza i nodi nascosti'),
-            ('full', 'COMPLETA', 'Con i nodi nascosti, sbiaditi'),
-            ('split', 'AFFIANCATE', 'Le due viste una accanto all\'altra'),
+          for (final (m, label, tip) in [
+            ('clean', t('CLEAN'), t('Without the hidden nodes')),
+            ('full', t('FULL'), t('With the hidden nodes, faded')),
+            ('split', t('SIDE BY SIDE'), t('The two views next to each other')),
           ])
             Tooltip(
               message: tip,
@@ -750,8 +758,8 @@ class _HomeState extends State<Home> {
               ),
             ),
           const SizedBox(width: 8),
-          Text('${_raw.hidden.length} nascosti', style: const TextStyle(fontSize: 10.5, color: dim)),
-          TextButton(onPressed: _unhideAll, child: const Text('MOSTRA TUTTI', style: TextStyle(fontSize: 10.5, letterSpacing: 1))),
+          Text(t('{0} hidden', [_raw.hidden.length]), style: const TextStyle(fontSize: 10.5, color: dim)),
+          TextButton(onPressed: _unhideAll, child: Text(t('SHOW ALL'), style: TextStyle(fontSize: 10.5, letterSpacing: 1))),
         ]),
       );
 
@@ -761,9 +769,9 @@ class _HomeState extends State<Home> {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.share_outlined, size: 14, color: accent),
           const SizedBox(width: 10),
-          Text(linkFrom == null ? 'PONTE · clicca il nodo di partenza' : 'PONTE · da «${linkFrom!.value.length > 28 ? '${linkFrom!.value.substring(0, 28)}…' : linkFrom!.value}» clicca la destinazione',
+          Text(linkFrom == null ? t('BRIDGE · click the start node') : t('BRIDGE · from «{0}» click the destination', [linkFrom!.label.length > 28 ? '${linkFrom!.label.substring(0, 28)}…' : linkFrom!.label]),
               style: const TextStyle(fontSize: 11.5)),
-          TextButton(onPressed: _cancelLink, child: const Text('ANNULLA (Esc)', style: TextStyle(fontSize: 10.5))),
+          TextButton(onPressed: _cancelLink, child: Text(t('CANCEL (Esc)'), style: TextStyle(fontSize: 10.5))),
         ]),
       );
 
@@ -776,7 +784,7 @@ class _HomeState extends State<Home> {
             focusNode: searchFocus,
             style: const TextStyle(fontSize: 12),
             decoration: InputDecoration(
-              hintText: 'cerca nel grafo (⌘/Ctrl+F)',
+              hintText: t('search the graph (⌘/Ctrl+F)'),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
@@ -784,14 +792,14 @@ class _HomeState extends State<Home> {
               suffixIcon: hl == null
                   ? null
                   : Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text('${hl.length} trovati', style: TextStyle(fontSize: 11, color: hl.isEmpty ? accent : dim)),
+                      Text(t('{0} found', [hl.length]), style: TextStyle(fontSize: 11, color: hl.isEmpty ? accent : dim)),
                       IconButton(
-                        tooltip: 'Nascondi i nodi trovati',
+                        tooltip: t('Hide the nodes found'),
                         icon: const Icon(Icons.visibility_off_outlined, size: 16),
                         onPressed: hl.isEmpty ? null : () => _setHidden([for (final n in graph.nodes) if (hl.contains(n.id)) ..._idsOf(n)], true),
                       ),
                       IconButton(
-                        tooltip: 'Nascondi tutti gli altri (resta solo ciò che hai trovato)',
+                        tooltip: t('Hide all the others (only what you found stays)'),
                         icon: const Icon(Icons.filter_alt_outlined, size: 16),
                         onPressed: hl.isEmpty ? null : () => _setHidden([for (final n in graph.nodes) if (!hl.contains(n.id)) ..._idsOf(n)], true),
                       ),
@@ -814,8 +822,8 @@ class _HomeState extends State<Home> {
         const SizedBox(height: 12),
         Image.asset('assets/icon.png', width: 28, height: 28),
         const SizedBox(height: 4),
-        IconButton(tooltip: 'Apri pannello (⌘/Ctrl+B)', icon: const Icon(Icons.chevron_right), onPressed: () => setState(() => sidebarOpen = true)),
-        IconButton(tooltip: 'Nuova ricerca (⌘/Ctrl+N)', icon: const Icon(Icons.add_circle_outline), onPressed: running ? null : _newSearch),
+        IconButton(tooltip: t('Open panel (⌘/Ctrl+B)'), icon: const Icon(Icons.chevron_right), onPressed: () => setState(() => sidebarOpen = true)),
+        IconButton(tooltip: t('New search (⌘/Ctrl+N)'), icon: const Icon(Icons.add_circle_outline), onPressed: running ? null : _newSearch),
         const SizedBox(height: 6),
         Container(
           width: 7,
@@ -826,20 +834,20 @@ class _HomeState extends State<Home> {
         const SizedBox(height: 10),
         _history(),
         _exportMenu(),
-        IconButton(tooltip: 'Analisi AI', icon: const Icon(Icons.auto_awesome, size: 18), onPressed: inv == null ? null : _openAi),
-        IconButton(tooltip: 'Impostazioni', icon: const Icon(Icons.tune, size: 18), onPressed: _openSettings),
+        IconButton(tooltip: t('AI analysis'), icon: const Icon(Icons.auto_awesome, size: 18), onPressed: inv == null ? null : _openAi),
+        IconButton(tooltip: t('Settings'), icon: const Icon(Icons.tune, size: 18), onPressed: _openSettings),
       ]);
 
   Widget _exportMenu() => PopupMenuButton<String>(
-        tooltip: 'Esporta',
+        tooltip: t('Export'),
         enabled: inv != null,
         icon: const Icon(Icons.file_download_outlined, size: 18),
         onSelected: _export,
-        itemBuilder: (_) => const [
-          PopupMenuItem(value: 'pdf', child: Text('PDF')),
-          PopupMenuItem(value: 'md', child: Text('Markdown')),
-          PopupMenuItem(value: 'obsidian', child: Text('Cartella Obsidian')),
-          PopupMenuItem(value: 'graphml', child: Text('GraphML')),
+        itemBuilder: (_) => [
+          const PopupMenuItem(value: 'pdf', child: Text('PDF')),
+          const PopupMenuItem(value: 'md', child: Text('Markdown')),
+          PopupMenuItem(value: 'obsidian', child: Text(t('Obsidian folder'))),
+          const PopupMenuItem(value: 'graphml', child: Text('GraphML')),
         ],
       );
 
@@ -849,7 +857,7 @@ class _HomeState extends State<Home> {
       );
 
   Widget _history() => IconButton(
-        tooltip: 'Ricerche precedenti',
+        tooltip: t('Previous searches'),
         icon: const Icon(Icons.history),
         onPressed: () async {
           final all = [...await listInvestigations()];
@@ -861,13 +869,13 @@ class _HomeState extends State<Home> {
               return StatefulBuilder(builder: (c, setD) {
                 final shown = all.where((i) => '${i['name']} ${i['purpose']}'.toLowerCase().contains(q.toLowerCase()));
                 return SimpleDialog(
-                  title: const Text('Ricerche precedenti', style: TextStyle(fontSize: 14)),
+                  title: Text(t('Previous searches'), style: TextStyle(fontSize: 14)),
                   children: [
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: TextField(
                           autofocus: true,
-                          decoration: const InputDecoration(hintText: 'cerca per nome', prefixIcon: Icon(Icons.search, size: 16)),
+                          decoration: InputDecoration(hintText: t('search by name'), prefixIcon: Icon(Icons.search, size: 16)),
                           onChanged: (v) => setD(() => q = v)),
                     ),
                     const SizedBox(height: 8),
@@ -878,10 +886,10 @@ class _HomeState extends State<Home> {
                           ListTile(
                             dense: true,
                             title: Text('${i['name']}'),
-                            subtitle: Text('#${i['id']} · ${i['entities']} entità · agg. ${_when((i['updated'] as num) > 0 ? (i['updated'] as num).toDouble() : (i['created'] as num).toDouble())}', style: const TextStyle(color: dim, fontSize: 11)),
+                            subtitle: Text(t('#{0} · {1} entities · upd. {2}', [i['id'], i['entities'], _when((i['updated'] as num) > 0 ? (i['updated'] as num).toDouble() : (i['created'] as num).toDouble())]), style: const TextStyle(color: dim, fontSize: 11)),
                             onTap: () => Navigator.pop(c, i['id'] as int),
                             trailing: IconButton(
-                              tooltip: 'Elimina',
+                              tooltip: t('Delete'),
                               icon: const Icon(Icons.delete_outline),
                               onPressed: () async {
                                 if (await _confirmDelete(c, '${i['name']}')) {
@@ -899,7 +907,7 @@ class _HomeState extends State<Home> {
                               },
                             ),
                           ),
-                        if (shown.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('nessun risultato', style: TextStyle(color: dim))),
+                        if (shown.isEmpty) Padding(padding: const EdgeInsets.all(16), child: Text(t('no results'), style: const TextStyle(color: dim))),
                       ]),
                     ),
                   ],
@@ -918,20 +926,20 @@ class _HomeState extends State<Home> {
             Image.asset('assets/icon.png', width: 30, height: 30),
             const SizedBox(width: 10),
             const Expanded(child: Text('OSINT/FIRE', style: TextStyle(fontSize: 14, letterSpacing: 3, fontWeight: FontWeight.w700))),
-            IconButton(tooltip: 'Riduci pannello (⌘/Ctrl+B)', icon: const Icon(Icons.chevron_left), onPressed: () => setState(() => sidebarOpen = false)),
+            IconButton(tooltip: t('Collapse panel (⌘/Ctrl+B)'), icon: const Icon(Icons.chevron_left), onPressed: () => setState(() => sidebarOpen = false)),
           ]),
           const SizedBox(height: 6),
           Row(children: [
-            IconButton(tooltip: 'Nuova ricerca (⌘/Ctrl+N)', icon: const Icon(Icons.add_circle_outline), onPressed: running ? null : _newSearch),
+            IconButton(tooltip: t('New search (⌘/Ctrl+N)'), icon: const Icon(Icons.add_circle_outline), onPressed: running ? null : _newSearch),
             _history(),
             _exportMenu(),
-            IconButton(tooltip: 'Analisi AI', icon: const Icon(Icons.auto_awesome, size: 18), onPressed: inv == null ? null : _openAi),
-            IconButton(tooltip: 'Impostazioni', icon: const Icon(Icons.tune, size: 18), onPressed: _openSettings),
+            IconButton(tooltip: t('AI analysis'), icon: const Icon(Icons.auto_awesome, size: 18), onPressed: inv == null ? null : _openAi),
+            IconButton(tooltip: t('Settings'), icon: const Icon(Icons.tune, size: 18), onPressed: _openSettings),
           ]),
-          _label('Ricerca'),
-          TextField(controller: name, decoration: const InputDecoration(hintText: 'nome')),
-          TextField(controller: purpose, decoration: const InputDecoration(hintText: 'motivazione (facoltativa)')),
-          _label('Seed'),
+          _label(t('Search')),
+          TextField(controller: name, decoration: InputDecoration(hintText: t('name'))),
+          TextField(controller: purpose, decoration: InputDecoration(hintText: t('purpose (optional)'))),
+          _label(t('Seed')),
           Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
             SizedBox(
               width: 112,
@@ -939,7 +947,7 @@ class _HomeState extends State<Home> {
                 initialValue: type,
                 isExpanded: true,
                 dropdownColor: const Color(0xFF131316),
-                items: [for (final t in ['Dominio', 'Email', 'Username', 'IP', 'Telefono', 'Persona', 'Azienda']) DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(fontSize: 12)))],
+                items: [for (final ty in ['Dominio', 'Email', 'Username', 'IP', 'Telefono', 'Persona', 'Azienda']) DropdownMenuItem(value: ty, child: Text(typeLabel(ty), style: const TextStyle(fontSize: 12)))],
                 onChanged: (v) => setState(() => type = v!),
               ),
             ),
@@ -948,8 +956,8 @@ class _HomeState extends State<Home> {
               child: TextField(
                 controller: value,
                 decoration: InputDecoration(
-                    hintText: 'valore',
-                    suffixIcon: IconButton(tooltip: 'Aggiungi seed', icon: const Icon(Icons.add, size: 16), onPressed: _addSeed)),
+                    hintText: t('value'),
+                    suffixIcon: IconButton(tooltip: t('Add seed'), icon: const Icon(Icons.add, size: 16), onPressed: _addSeed)),
                 onSubmitted: (_) => _addSeed(),
               ),
             ),
@@ -960,14 +968,14 @@ class _HomeState extends State<Home> {
               child: Wrap(spacing: 6, runSpacing: 6, children: [
                 for (final s in seeds)
                   InputChip(
-                    label: Text('${s.$1} · ${s.$2}'),
+                    label: Text('${typeLabel(s.$1)} · ${s.$2}'),
                     visualDensity: VisualDensity.compact,
                     avatar: Container(width: 7, height: 7, decoration: BoxDecoration(color: typeColor(s.$1), shape: BoxShape.circle)),
                     onDeleted: () => setState(() => seeds.remove(s)),
                   ),
               ]),
             ),
-          _label('Profondità · $depth'),
+          _label(t('Depth · {0}', [depth])),
           Slider(value: depth.toDouble(), min: 0, max: 4, divisions: 4, onChanged: (v) => setState(() => depth = v.round())),
           const SizedBox(height: 6),
           if (running)
@@ -979,30 +987,30 @@ class _HomeState extends State<Home> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
               ),
               onPressed: stopping ? null : _stop,
-              child: Text(stopping ? 'INTERRUZIONE…' : 'FERMA', style: const TextStyle(fontSize: 12, letterSpacing: 1.2, fontWeight: FontWeight.w600)),
+              child: Text(stopping ? t('STOPPING…') : t('STOP'), style: const TextStyle(fontSize: 12, letterSpacing: 1.2, fontWeight: FontWeight.w600)),
             )
           else if (inv == null) ...[
-            FilledButton(onPressed: !backendReady ? null : start, child: const Text('AVVIA')),
+            FilledButton(onPressed: !backendReady ? null : start, child: Text(t('START'))),
             Align(
               alignment: Alignment.centerLeft,
-              child: TextButton(onPressed: backendReady ? _createBlank : null, child: const Text('oppure crea una mappa vuota da costruire a mano', style: TextStyle(fontSize: 10.5))),
+              child: TextButton(onPressed: backendReady ? _createBlank : null, child: Text(t('or create an empty map to build by hand'), style: TextStyle(fontSize: 10.5))),
             ),
           ] else ...[
-            FilledButton(onPressed: !backendReady || seeds.isEmpty ? null : _refresh, child: const Text('AGGIORNA')),
+            FilledButton(onPressed: !backendReady || seeds.isEmpty ? null : _refresh, child: Text(t('UPDATE'))),
             if (seeds.isEmpty)
-              const Padding(padding: EdgeInsets.only(top: 6), child: Text('mappa senza seed: aggiungine uno per poterla aggiornare', style: TextStyle(fontSize: 10.5, color: dim))),
+              Padding(padding: const EdgeInsets.only(top: 6), child: Text(t('map without seeds: add one to be able to update it'), style: const TextStyle(fontSize: 10.5, color: dim))),
             if (updatedAt != null)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text('ultimo aggiornamento ${_when(updatedAt!)}${runCount == null ? '' : ' · $runCount esecuzioni'}', style: const TextStyle(fontSize: 10.5, color: dim)),
+                child: Text(runCount == null ? t('last update {0}', [_when(updatedAt!)]) : t('last update {0} · {1} runs', [_when(updatedAt!), runCount]), style: const TextStyle(fontSize: 10.5, color: dim)),
               ),
           ],
           if (!backendReady)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Row(children: [
-                Expanded(child: Text(backendError ?? 'avvio backend…', style: TextStyle(fontSize: 11, color: backendError == null ? dim : accent))),
-                if (backendError != null) TextButton(onPressed: _startBackend, child: const Text('riprova')),
+                Expanded(child: Text(backendError ?? t('starting backend…'), style: TextStyle(fontSize: 11, color: backendError == null ? dim : accent))),
+                if (backendError != null) TextButton(onPressed: _startBackend, child: Text(t('retry'))),
               ]),
             ),
           const SizedBox(height: 16),
@@ -1010,16 +1018,16 @@ class _HomeState extends State<Home> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(children: [
-              Expanded(child: Text('${graph.nodes.length} nodi · ${graph.edges.length} archi', style: const TextStyle(fontSize: 11, color: dim))),
+              Expanded(child: Text(t('{0} nodes · {1} edges', [graph.nodes.length, graph.edges.length]), style: const TextStyle(fontSize: 11, color: dim))),
               if (newIds != null)
                 InkWell(
                   onTap: () => setState(() => newIds = null),
                   child: Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: Text('● ${newIds!.length} nuovi ✕', style: const TextStyle(fontSize: 11, color: Color(0xFF7EE787))),
+                    child: Text(t('● {0} new ✕', [newIds!.length]), style: const TextStyle(fontSize: 11, color: Color(0xFF7EE787))),
                   ),
                 ),
-              const Text('raggruppa', style: TextStyle(fontSize: 11, color: dim)),
+              Text(t('group'), style: const TextStyle(fontSize: 11, color: dim)),
               Transform.scale(
                 scale: 0.7,
                 child: Switch(value: groupNodes, onChanged: (v) => setState(() => groupNodes = v)),
@@ -1028,7 +1036,7 @@ class _HomeState extends State<Home> {
           ),
           if (graph.links.any((l) => l.status == 'review')) ...[
             const Divider(),
-            _label('Da verificare'),
+            _label(t('To review')),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 220),
               child: ListView(shrinkWrap: true, children: [
@@ -1039,7 +1047,7 @@ class _HomeState extends State<Home> {
           ],
           if (graph.nodes.any((n) => graph.notes[n.id]?.starred ?? false)) ...[
             const Divider(),
-            _label('Preferiti'),
+            _label(t('Favorites')),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 150),
               child: ListView(shrinkWrap: true, children: [
@@ -1051,8 +1059,8 @@ class _HomeState extends State<Home> {
                       child: Row(children: [
                         const Icon(Icons.star, size: 12, color: gold),
                         const SizedBox(width: 8),
-                        Expanded(child: Text(n.value.replaceFirst(RegExp(r'^https?://(www\.)?'), ''), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11.5))),
-                        Text(n.type, style: const TextStyle(fontSize: 10, color: dim)),
+                        Expanded(child: Text(n.label.replaceFirst(RegExp(r'^https?://(www\.)?'), ''), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11.5))),
+                        Text(graph.typeName(n.type), style: const TextStyle(fontSize: 10, color: dim)),
                       ]),
                     ),
                   ),
@@ -1070,23 +1078,23 @@ class _HomeState extends State<Home> {
                       style: TextStyle(
                           fontSize: 10.5,
                           height: 1.3,
-                          color: l.startsWith('✗') || l.startsWith('Errore') ? accent : (l.startsWith('Completato') || l.startsWith('Interrotta') ? fg : dim))),
+                          color: l.startsWith('✗') || l.startsWith(t('Error')) ? accent : (l.startsWith(t('Completed')) || l.startsWith(t('Stopped')) ? fg : dim))),
                 ),
             ]),
           ),
         ]),
       );
 
-  Widget _expandButton((String, String) t) {
+  Widget _expandButton((String, String) tg) {
     final enabled = !running && backendReady;
     return PopupMenuButton<int>(
       enabled: enabled,
-      tooltip: 'Cerca altri dati a partire da questo',
-      onSelected: (d) => _expand(t, d),
-      itemBuilder: (_) => const [
-        PopupMenuItem(value: 0, child: Text('Solo questo dato')),
-        PopupMenuItem(value: 1, child: Text('Fino a profondità 1')),
-        PopupMenuItem(value: 2, child: Text('Fino a profondità 2')),
+      tooltip: t('Look for more data starting from this one'),
+      onSelected: (d) => _expand(tg, d),
+      itemBuilder: (_) => [
+        PopupMenuItem(value: 0, child: Text(t('Only this item'))),
+        PopupMenuItem(value: 1, child: Text(t('Up to depth 1'))),
+        PopupMenuItem(value: 2, child: Text(t('Up to depth 2'))),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -1098,7 +1106,7 @@ class _HomeState extends State<Home> {
           Icon(Icons.travel_explore, size: 14, color: enabled ? accent : dim),
           const SizedBox(width: 8),
           Flexible(
-            child: Text('ESPANDI · ${t.$1} «${t.$2}»',
+            child: Text(t('EXPAND · {0} «{1}»', [graph.typeName(tg.$1), tg.$2]),
                 maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, letterSpacing: 0.8, color: enabled ? accent : dim)),
           ),
           Icon(Icons.arrow_drop_down, size: 16, color: enabled ? accent : dim),
@@ -1115,7 +1123,7 @@ class _HomeState extends State<Home> {
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('CERCA SU', style: TextStyle(fontSize: 10, letterSpacing: 1.5, color: dim)),
+        Text(t('SEARCH ON'), style: TextStyle(fontSize: 10, letterSpacing: 1.5, color: dim)),
         const SizedBox(height: 6),
         Wrap(spacing: 6, runSpacing: 6, children: [
           for (final l in links)
@@ -1153,15 +1161,15 @@ class _HomeState extends State<Home> {
   }
 
   Widget _review(GLink l) {
-    final byId = {for (final x in graph.nodes) x.id: x.value};
+    final byId = {for (final x in graph.nodes) x.id: x.label};
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
       title: Text('${byId[l.a]} ↔ ${byId[l.b]}', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11.5)),
-      subtitle: Text('${(l.score * 100).round()}% · ${l.signals.join(', ')}', style: const TextStyle(fontSize: 10.5, color: dim)),
+      subtitle: Text('${(l.score * 100).round()}% · ${l.signalLabels.join(', ')}', style: const TextStyle(fontSize: 10.5, color: dim)),
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-        IconButton(tooltip: 'Conferma', icon: const Icon(Icons.check), onPressed: () => _decide(l, 'confirmed')),
-        IconButton(tooltip: 'Scarta', icon: const Icon(Icons.close), onPressed: () => _decide(l, 'rejected')),
+        IconButton(tooltip: t('Confirm'), icon: const Icon(Icons.check), onPressed: () => _decide(l, 'confirmed')),
+        IconButton(tooltip: t('Discard'), icon: const Icon(Icons.close), onPressed: () => _decide(l, 'rejected')),
       ]),
     );
   }
@@ -1189,10 +1197,10 @@ class _HomeState extends State<Home> {
           ),
         );
     return Wrap(spacing: 6, runSpacing: 6, children: [
-      chip(isHidden ? Icons.visibility_outlined : Icons.visibility_off_outlined, isHidden ? 'MOSTRA' : 'NASCONDI', () => _setHidden(ids, !isHidden)),
-      if (n.id > 0 && n.members.isEmpty) chip(Icons.share_outlined, 'COLLEGA A…', () => _startLink(n)),
-      if (n.manual) chip(Icons.edit_outlined, 'MODIFICA', () => _editNode(n)),
-      chip(Icons.delete_outline, 'ELIMINA', () => _deleteNode(n), color: accent),
+      chip(isHidden ? Icons.visibility_outlined : Icons.visibility_off_outlined, isHidden ? t('SHOW') : t('HIDE'), () => _setHidden(ids, !isHidden)),
+      if (n.id > 0 && n.members.isEmpty) chip(Icons.share_outlined, t('LINK TO…'), () => _startLink(n)),
+      if (n.manual) chip(Icons.edit_outlined, t('EDIT'), () => _editNode(n)),
+      chip(Icons.delete_outline, t('DELETE'), () => _deleteNode(n), color: accent),
     ]);
   }
 
@@ -1206,20 +1214,20 @@ class _HomeState extends State<Home> {
           Row(children: [
             Container(width: 8, height: 8, decoration: BoxDecoration(color: typeColor(n.type), shape: BoxShape.circle)),
             const SizedBox(width: 8),
-            Expanded(child: Text(n.type.toUpperCase(), style: const TextStyle(fontSize: 10, letterSpacing: 1.5, color: dim))),
+            Expanded(child: Text(graph.typeName(n.type).toUpperCase(), style: const TextStyle(fontSize: 10, letterSpacing: 1.5, color: dim))),
             InkWell(onTap: () => setState(() => selected = null), child: const Icon(Icons.close, size: 14, color: dim)),
           ]),
           const SizedBox(height: 10),
           if (n.type == 'Immagine' && n.members.isEmpty) Padding(padding: const EdgeInsets.only(bottom: 10), child: _img(n.value, 128)),
           if (n.type != 'Immagine' && n.members.isEmpty) _linkedImages(n),
-          SelectableText(n.value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          SelectableText(n.label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(height: 10),
           _nodeActions(n),
           if (n.id > 0 && n.members.isEmpty) ...[
             const SizedBox(height: 8),
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               IconButton(
-                tooltip: (graph.notes[n.id]?.starred ?? false) ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti',
+                tooltip: (graph.notes[n.id]?.starred ?? false) ? t('Remove from favorites') : t('Add to favorites'),
                 icon: Icon((graph.notes[n.id]?.starred ?? false) ? Icons.star : Icons.star_border,
                     color: (graph.notes[n.id]?.starred ?? false) ? gold : dim, size: 18),
                 onPressed: () => _saveNote(n, starred: !(graph.notes[n.id]?.starred ?? false)),
@@ -1228,14 +1236,14 @@ class _HomeState extends State<Home> {
                 child: NoteEditor(
                   key: ValueKey('$inv-${n.id}'),
                   initial: graph.notes[n.id]?.text ?? '',
-                  onChanged: (t) => _saveNote(n, text: t),
+                  onChanged: (v) => _saveNote(n, text: v),
                 ),
               ),
             ]),
           ],
-          if (expandTarget(n) case final t?) ...[
+          if (expandTarget(n) case final tg?) ...[
             const SizedBox(height: 12),
-            _expandButton(t),
+            _expandButton(tg),
           ],
           _pivotLinks(n, edges),
           const SizedBox(height: 10),
@@ -1255,14 +1263,14 @@ class _HomeState extends State<Home> {
                           Row(children: [
                             Expanded(
                               child: Text(
-                                e.src == n.id ? '${e.rel} → ${byId[e.dst]?.value}' : '${byId[e.src]?.value} → ${e.rel}',
+                                e.src == n.id ? '${e.relLabel} → ${byId[e.dst]?.label}' : '${byId[e.src]?.label} → ${e.relLabel}',
                                 style: TextStyle(fontSize: 11.5, color: e.manual ? gold : fg),
                               ),
                             ),
-                            if (e.manual) InkWell(onTap: () => _deleteBridge(e), child: const Tooltip(message: 'Elimina questo ponte', child: Icon(Icons.close, size: 13, color: dim))),
+                            if (e.manual) InkWell(onTap: () => _deleteBridge(e), child: Tooltip(message: t('Delete this bridge'), child: const Icon(Icons.close, size: 13, color: dim))),
                           ]),
                           Text(
-                            '${e.reason} · ${e.collector} · ${(e.conf * 100).round()}%${e.url.isEmpty ? '' : '\n${e.url}'}',
+                            '${e.reasonLabel} · ${e.collector} · ${(e.conf * 100).round()}%${e.url.isEmpty ? '' : '\n${e.url}'}',
                             style: const TextStyle(fontSize: 10, color: dim, height: 1.4),
                           ),
                         ]),

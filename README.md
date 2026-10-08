@@ -15,7 +15,7 @@
 
 <p align="center"><img src="docs/images/graph.png" alt="The graph of an investigation" width="900"></p>
 
-> The interface is in Italian. Everything runs on your computer: investigations, notes and API keys never leave it
+> The interface comes in English, Italian, Spanish and German (Settings → General, it follows your system language on first start). Everything runs on your computer: investigations, notes and API keys never leave it
 > (unless you choose a cloud AI provider, see [AI](#ai)).
 
 ## What it does
@@ -93,7 +93,7 @@ optional API keys, the AI connector, and data maintenance (clear cache, backup, 
 
 **Connected accounts** use the *official* API of each platform with your own credentials (GitHub, Reddit, Twitch, YouTube, Spotify, X, plus VirusTotal,
 Shodan, Hunter, HIBP and others). Facebook, Instagram and LinkedIn offer no API to look people up and forbid automated use of an account,
-so OSINT-Fire does not log into them: the **CERCA SU** buttons open the search in your browser instead, where you are already signed in.
+so OSINT-Fire does not log into them: the **SEARCH ON** buttons open the search in your browser instead, where you are already signed in.
 
 ## AI
 

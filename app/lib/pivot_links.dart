@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'l10n.dart';
 import 'platform.dart';
 
 class PivotLink {
@@ -45,9 +46,9 @@ List<PivotLink> pivotLinks(String type, String value, {String? imageUrl}) {
         PivotLink('Epieos', 'https://epieos.com/?q=${_q(value)}&t=email'),
         PivotLink('Bing', 'https://www.bing.com/search?q=${_q('"$value"')}'),
         PivotLink('GitHub', 'https://github.com/search?q=${_q(value)}&type=users'),
-        PivotLink('Facebook (accesso tuo)', 'https://www.facebook.com/search/top?q=${_q(value)}'),
-        PivotLink('LinkedIn (accesso tuo)', 'https://www.linkedin.com/search/results/all/?keywords=${_q(value)}'),
-        PivotLink('X (accesso tuo)', 'https://x.com/search?q=${_q(value)}'),
+        PivotLink(t('Facebook (your login)'), 'https://www.facebook.com/search/top?q=${_q(value)}'),
+        PivotLink(t('LinkedIn (your login)'), 'https://www.linkedin.com/search/results/all/?keywords=${_q(value)}'),
+        PivotLink(t('X (your login)'), 'https://x.com/search?q=${_q(value)}'),
       ];
     case 'Username':
       return [
@@ -99,11 +100,11 @@ List<PivotLink> pivotLinks(String type, String value, {String? imageUrl}) {
         PivotLink('Telegram', 'https://t.me/+$digits'),
         PivotLink('Truecaller', 'https://www.truecaller.com/search/it/$digits'),
         PivotLink('Tellows', 'https://www.tellows.it/num/$digits'),
-        PivotLink('Facebook (accesso tuo)', 'https://www.facebook.com/search/top?q=${_q(value)}'),
+        PivotLink(t('Facebook (your login)'), 'https://www.facebook.com/search/top?q=${_q(value)}'),
       ];
     case 'Account':
       return [
-        PivotLink('Apri profilo', value),
+        PivotLink(t('Open profile'), value),
         PivotLink('Wayback', 'https://web.archive.org/web/*/$value'),
       ];
     case 'Immagine':
@@ -114,7 +115,7 @@ List<PivotLink> pivotLinks(String type, String value, {String? imageUrl}) {
         PivotLink('TinEye', 'https://tineye.com/search?url=${_q(u)}'),
         PivotLink('Yandex', 'https://yandex.com/images/search?rpt=imageview&url=${_q(u)}'),
         PivotLink('Bing', 'https://www.bing.com/images/search?view=detailv2&iss=sbi&q=imgurl:${_q(u)}'),
-        PivotLink('Apri originale', u),
+        PivotLink(t('Open original'), u),
       ];
   }
   return const [];

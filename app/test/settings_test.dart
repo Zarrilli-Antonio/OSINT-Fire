@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:osint_fire/ai_dialog.dart';
+import 'package:osint_fire/flags.dart';
+import 'package:osint_fire/l10n.dart';
 import 'package:osint_fire/api.dart';
 import 'package:osint_fire/backend.dart';
 import 'package:osint_fire/settings_dialog.dart';
@@ -30,6 +32,16 @@ Future<void> _open(WidgetTester tester, Widget dialog) async {
 }
 
 void main() {
+  setUpAll(() => appLang.value = 'it');
+  testWidgets('settings: language selector offers the four languages with flags', (tester) async {
+    await _open(tester, SettingsDialog(backend: Backend(), initial: _settings(), initialCollectors: _collectors, initialStats: const {'size': 1, 'investigations': 0}));
+    for (final n in ['Italiano', 'English', 'Español', 'Deutsch']) {
+      expect(find.widgetWithText(ChoiceChip, n), findsOneWidget);
+    }
+    expect(find.byType(FlagIcon), findsNWidgets(4));
+    expect(tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Italiano')).selected, isTrue);
+  });
+
   testWidgets('settings: edits are collected, sources can be toggled, secrets are masked', (tester) async {
     await _open(tester, SettingsDialog(backend: Backend(), initial: _settings(), initialCollectors: _collectors, initialStats: const {'size': 2500000, 'investigations': 3}));
     expect(find.text('IMPOSTAZIONI'), findsOneWidget);

@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:osint_fire/api.dart';
+import 'package:osint_fire/l10n.dart';
 import 'package:osint_fire/graph_view.dart';
 import 'package:osint_fire/theme.dart';
 
@@ -12,6 +13,7 @@ Graph _graph() => Graph(
     );
 
 void main() {
+  setUpAll(() => appLang.value = 'it');
   testWidgets('drag node pins it, background drag pans, scroll zooms', (tester) async {
     tester.view.physicalSize = const Size(900, 700);
     tester.view.devicePixelRatio = 1;

@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:osint_fire/api.dart';
+import 'package:osint_fire/l10n.dart';
 
 void main() {
+  setUpAll(() => appLang.value = 'it');
   test('leaf groups collapse, small ones and linked ones stay, ids are stable', () {
     final nodes = [
       GNode(1, 'Account', 'hub'),

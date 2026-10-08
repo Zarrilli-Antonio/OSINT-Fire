@@ -12,6 +12,8 @@ FREE_EMAIL_DOMAINS = (
 ).split()
 
 SPEC = {
+    # interface language ("" = not chosen yet: the app picks the system language and saves it)
+    "language": ("", "choice", ("", "it", "en", "es", "de")),
     # investigations
     "default_depth": (2, "int", (0, 4)),
     "default_max_entities": (300, "int", (10, 2000)),
@@ -69,30 +71,30 @@ CFG: dict = {k: (list(v[0]) if isinstance(v[0], list) else v[0]) for k, v in SPE
 
 def validate(key: str, value):
     if key not in SPEC:
-        raise ValueError(f"impostazione sconosciuta: {key}")
+        raise ValueError(f"unknown setting: {key}")
     default, kind, rule = SPEC[key]
     if kind == "bool":
         if not isinstance(value, bool):
-            raise ValueError(f"{key}: atteso true/false")
+            raise ValueError(f"{key}: expected true/false")
     elif kind == "int":
         if isinstance(value, bool) or not isinstance(value, int) or not rule[0] <= value <= rule[1]:
-            raise ValueError(f"{key}: atteso un intero tra {rule[0]} e {rule[1]}")
+            raise ValueError(f"{key}: expected an integer between {rule[0]} and {rule[1]}")
     elif kind in ("str", "secret"):
         if not isinstance(value, str) or (rule and len(value) > rule[1]):
-            raise ValueError(f"{key}: testo non valido")
+            raise ValueError(f"{key}: invalid text")
         value = value.strip()
         if key == "user_agent" and not value:
-            raise ValueError("user_agent non può essere vuoto")
+            raise ValueError("user_agent cannot be empty")
         if key == "proxy" and value and not value.startswith(("http://", "https://", "socks5://", "socks5h://")):
-            raise ValueError("proxy deve iniziare con http://, https://, socks5:// o socks5h://")
+            raise ValueError("proxy must start with http://, https://, socks5:// or socks5h://")
         if key == "ai_base_url" and value and not value.startswith(("http://", "https://")):
-            raise ValueError("ai_base_url deve iniziare con http:// o https://")
+            raise ValueError("ai_base_url must start with http:// or https://")
     elif kind == "choice":
         if value not in rule:
-            raise ValueError(f"{key}: uno tra {', '.join(rule)}")
+            raise ValueError(f"{key}: one of {', '.join(rule)}")
     elif kind == "list":
         if not isinstance(value, list) or not all(isinstance(x, str) for x in value) or len(value) > 1000:
-            raise ValueError(f"{key}: atteso un elenco di nomi")
+            raise ValueError(f"{key}: expected a list of names")
         if key == "ignored_domains":  # normalise: lower case, no '@', no blanks, no duplicates
             value = list(dict.fromkeys(x.strip().lstrip("@").lower().rstrip(".") for x in value if x.strip()))
     return value
@@ -141,3 +143,8 @@ def is_ignored_domain(domain: str) -> bool:
     """True for a domain (or any subdomain of one) the user does not want traced automatically."""
     d = domain.lower().rstrip(".")
     return any(d == x or d.endswith("." + x) for x in CFG["ignored_domains"])
+
+
+def lang() -> str:
+    """Language for everything the backend writes for people (exports, AI answers, labels): the chosen one, English otherwise."""
+    return CFG["language"] or "en"

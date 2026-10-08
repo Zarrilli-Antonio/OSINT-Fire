@@ -1,0 +1,15 @@
+const Map<String, List<String>> trGraph = {
+  'click the legend = show/hide · drag nodes · double click = unpin': ['clic sulla legenda = mostra/nascondi · trascina i nodi · doppio clic = sblocca', 'clic en la leyenda = mostrar/ocultar · arrastra los nodos · doble clic = soltar', 'Klick auf die Legende = ein-/ausblenden · Knoten ziehen · Doppelklick = lösen'],
+  'Add a node': ['Aggiungi un nodo', 'Añadir un nodo', 'Knoten hinzufügen'],
+  'Cancel the link': ['Annulla il collegamento', 'Cancelar el enlace', 'Verknüpfung abbrechen'],
+  'Create a bridge between two nodes': ['Crea un ponte tra due nodi', 'Crear un puente entre dos nodos', 'Brücke zwischen zwei Knoten erstellen'],
+  'Zoom +': ['Zoom +', 'Zoom +', 'Zoom +'],
+  'Zoom −': ['Zoom −', 'Zoom −', 'Zoom −'],
+  'Fit all': ['Inquadra tutto', 'Ajustar todo', 'Alles einpassen'],
+  'Unpin all nodes': ['Sblocca tutti i nodi', 'Soltar todos los nodos', 'Alle Knoten lösen'],
+  'Facebook (your login)': ['Facebook (accesso tuo)', 'Facebook (con tu sesión)', 'Facebook (dein Login)'],
+  'LinkedIn (your login)': ['LinkedIn (accesso tuo)', 'LinkedIn (con tu sesión)', 'LinkedIn (dein Login)'],
+  'X (your login)': ['X (accesso tuo)', 'X (con tu sesión)', 'X (dein Login)'],
+  'Open profile': ['Apri profilo', 'Abrir perfil', 'Profil öffnen'],
+  'Open original': ['Apri originale', 'Abrir original', 'Original öffnen'],
+};
