@@ -176,6 +176,8 @@ List<PivotLink> _more(String type, String value) {
       return [
         PivotLink('DuckDuckGo', 'https://duckduckgo.com/?q=$quoted'),
         PivotLink('Yandex', 'https://yandex.com/search/?text=$quoted'),
+        PivotLink('Discord.bio', 'https://discord.bio/p/${_p(value)}'),
+        PivotLink('Discord (Google)', 'https://www.google.com/search?q=${_q('"$value" (site:discord.com OR site:discord.gg OR site:discord.bio)')}'),
         PivotLink('Bluesky', 'https://bsky.app/profile/${_p(value)}.bsky.social'),
         PivotLink('Mastodon', 'https://mastodon.social/@${_p(value)}'),
         PivotLink('GitLab', 'https://gitlab.com/${_p(value)}'),

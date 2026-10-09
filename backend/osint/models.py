@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass, field
 
 # Entity types. PIVOT = types that are re-queried by other collectors.
-PIVOT = {"Dominio", "Email", "Username", "IP", "Telefono", "Portafoglio", "Vulnerabilità"}
+PIVOT = {"Dominio", "Email", "Username", "IP", "Telefono", "Portafoglio", "Vulnerabilità", "Account"}  # Account: invite links etc. are read by the few collectors that accept URLs
 
 
 _ETH = re.compile(r"^0x[0-9a-fA-F]{40}$")

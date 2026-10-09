@@ -214,9 +214,9 @@ VALUES = {
 
 _tables = {"type": TYPES, "rel": RELS, "reason": REASONS, "value": VALUES}
 
-from .i18n_ext import academic, crypto, infra, profiles, records, threat  # noqa: E402  (tables of the extra source modules)
+from .i18n_ext import academic, crypto, discord, infra, profiles, records, threat  # noqa: E402  (tables of the extra source modules)
 
-for _m in (profiles, infra, threat, records, academic, crypto):
+for _m in (profiles, infra, threat, records, academic, crypto, discord):
     for _kind, _table in _tables.items():
         _table.update(getattr(_m, _kind.upper() + "S"))
 
